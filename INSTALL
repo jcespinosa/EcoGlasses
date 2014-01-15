@@ -1,0 +1,118 @@
+INSTALL
+=======
+
+Guía para la instalación y configuración de las librerias.
+
+
+Python
+======
+
+Verificar que el interprete Python se encuentre instalado en sus sistema.
+Se recomienda instalar la versión 2.7
+
+En Ubuntu 12.04 utilizar el comando:
+
+            which python
+
+Comunmente se encuentra instalado de fábrica en las distribuciones de Linux
+Ubuntu. Para mayor información sobre la instalación del interprete en otros sistemas
+operativos, visitar la página
+
+http://www.python.org/download/
+
+
+Librerias en Python
+===================
+
+Se recomienda instalar el gestor de librerias PIP para Python
+
+En Ubuntu 12.04, utilizar los comandos:
+
+            sudo apt-get install python-setuptools
+            sudo easy_install pip
+            sudo pip
+
+Para que el sistema funcione correctamente, verificar que se tengan las siguientes
+librerias disponibles en el interprete Python
+
+- Numpy: Para la manipulación de los arreglos de las imágenes
+
+En Ubuntu 12.04 utilizar el comando:
+
+        sudo apt-get install python-numpy
+
+- PIL: Para la conversión de las imágenes desde OpenCV
+- Image: La rutina Image.fromstring para convertir la imágen desde OpenCV a PIL
+- ImageTk: Para mostrar las imágenes desde PIL a TKInter
+- Tkinter: Para generar la interfaz principal
+- sys: argv para leer los parámetros desde terminal
+- time: time para cronometrar el rendimiento del sistema
+
+- OpenCV: Contiene las rutinas necesarias para visión computacional utilizando
+Python
+
+En Ubuntu 12.04 utilizar el comando:
+
+            sudo apt-get install python-opencv
+
+
+Instalación de OpenCV (método alternativo)
+==========================================
+
+*Este método puede requerir más de 1 hora, dependiendo de las capacidades de su equipo.
+En caso de detectar un falla o funcionalidad límitada utilizando el método de instalacón
+recomendado para OpenCV en Python, utilizar la siguiente serie de comandos.
+Para Ubuntu 12.04:
+
+            sudo apt-get update
+            sudo apt-get install build-essential checkinstall git cmake libfaac-dev libjack-jackd2-dev libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev libsdl1.2-dev libtheora-dev libva-dev libvdpau-dev libvorbis-dev libx11-dev libxfixes-dev libxvidcore-dev texi2html yasm zlib1g-dev
+            sudo apt-get install libgstreamer0.10-0 libgstreamer0.10-dev gstreamer0.10-tools gstreamer0.10-plugins-base libgstreamer-plugins-base0.10-dev gstreamer0.10-plugins-good gstreamer0.10-plugins-ugly gstreamer0.10-plugins-bad gstreamer0.10-ffmpeg
+            sudo apt-get install libgtk2.0-0 libgtk2.0-dev
+            sudo apt-get install libtiff4-dev libjpeg-dev libjasper-dev
+            sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libdc1394-22-dev libxine-dev libgstreamer0.10-dev libgstreamer-plugins-base0.10-dev libv4l-dev
+
+            wget ftp://ftp.videolan.org/pub/videolan/x264/snapshots/x264-snapshot-20130101-2245-stable.tar.bz2
+            tar xvf x264-snapshot-20130101-2245-stable.tar.bz2
+            cd x264-snapshot-20130101-2245-stable/
+            ./configure --enable-shared --enable-pic
+            make
+            sudo make install > installlog.txt
+
+            cd ..
+
+            wget http://ffmpeg.org/releases/ffmpeg-0.11.2.tar.bz2
+            tar xvf ffmpeg-0.11.2.tar.bz2
+            cd ffmpeg-0.11.2/
+            ./configure --enable-gpl --enable-libfaac --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libtheora --enable-libvorbis --enable-libx264 --enable-libxvid --enable-nonfree --enable-postproc --enable-version3 --enable-x11grab --enable-shared --enable-pic
+            make
+            sudo make install > installlog.txt
+
+            cd ..
+
+            wget http://www.linuxtv.org/downloads/v4l-utils/v4l-utils-0.9.3.tar.bz2
+            tar xvf v4l-utils-0.9.3.tar.bz2
+            cd v4l-utils-0.9.3/
+            make
+            ./configure --enable-shared
+            make
+            sudo make install > installlog.txt
+
+            cd ..
+
+            wget downloads.sourceforge.net/project/opencvlibrary/opencv-unix/2.4.3/OpenCV-2.4.3.tar.bz2
+            tar xvf OpenCV-2.4.3.tar.bz2
+            cd OpenCV-2.4.3/
+            mkdir release
+            cd release
+            cmake -D WITH_TBB=ON -D BUILD_NEW_PYTHON_SUPPORT=ON -D WITH_V4L=ON -D WITH-GSTREAMER=ON -D WITH-XINE=ON -D WITH-XIMEA=ON -D INSTALL_C_EXAMPLES=ON -D INSTALL_PYTHON_EXAMPLES=ON -D BUILD_EXAMPLES=ON -D WITH_CUDA=OFF ..
+            make
+            sudo make install > installlog.log
+
+            export LD_LIBRARY_PATH=/usr/local/lib
+            emacs -nw /etc/ld.so.conf.d/opencv.conf
+            sudo ldconfig /etc/ld.so.conf
+
+            cd
+            exit
+
+Al final, reiniciar el sistema operativo.

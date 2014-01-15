@@ -1,0 +1,50 @@
+#! /usr/bin/python 
+# -*- coding: utf-8 -*-
+
+import cv2, numpy
+
+def calculate_resize(actual_size, input_size):
+    if actual_size[0] > actual_size[1]:
+        if input_size[0] > input_size[1]:
+            rate_change = float(input_size[0]/actual_size[0])
+        else:
+            rate_change = float(input_size[1]/actual_size[0])
+    else:
+        actual_size[1]
+        if input_size[0] > input_size[1]:
+            rate_change = float(input_size[0]/actual_size[1])
+        else:
+            rate_change = float(input_size[1]/actual_size[1])
+
+    return (actual_size[0]*rate_change, actual_size[1]*rate_change)
+
+
+class CameraIterator:
+    
+    def __init__(self, camera_index):
+        self.cam = cv2.VideoCapture(0)
+        if not self.cam.isOpened():
+            print "ERROR:: No fue posible acceder a la cámara"
+            return None
+        
+    def start(self, f, grayscale=False, size=None, workingCopy = False):
+        while True:
+            retval, frame = self.cam.read()
+
+            f(frame)
+
+            cv2.imshow('Output', frame, wframe)
+            key = cv2.waitKey(20)
+            if key in (ord('Q'), ord('q')):
+                break
+
+    def __del__(self):
+        self.cam.release()
+
+
+def main():
+    cam = CameraIterator(0)
+    cam.start(lambda frame, i=0: i)
+
+if __name__ == '__main__':
+    main()
