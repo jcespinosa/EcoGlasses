@@ -11,7 +11,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        #
 # GNU General Public License for more details.                         #
 #                                                                      #
-# You should have received a copy of the GNU General Public License    # 
+# You should have received a copy of the GNU General Public License    #
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.#
 ########################################################################
 
@@ -34,7 +34,7 @@ class App(Frame):
   def __init__(self, parent):
     Frame.__init__(self, parent)
     self.parent = parent
-    self.pack_propagate(1)
+    #self.pack_propagate(1) # Experimental, comment and uncomment to check the behavior of the UI
     self.buildUI(parent) 
     self.parent.config(menu=self.menubar)
     self.size = (640,480)
@@ -42,7 +42,7 @@ class App(Frame):
         
   def buildUI(self, root):
     self.parent.title("Logo detection")
-    self.pack()
+    #self.pack() # Experimental, comment and uncomment to check the behavior of the UI
 
     self.menubar = Menu(root)
     self.filemenu = Menu(self.menubar, tearoff=0)
@@ -92,7 +92,8 @@ class Detection():
   def getFrame(self):
     self.cameraIndex = 0
 
-    # Comment this block if you are going to read a video file
+    # ======================================================
+    # Comment this block if you are going to read a video file or image file
     c = cv.waitKey(10)
     if(c == "n"):
       self.cameraIndex += 1
@@ -105,9 +106,9 @@ class Detection():
     # ======================================================
 
     dump, self.cvFrame = self.capture.read()  # Uncomment if you are reading data from webcam or video file
+    #self.cvFrame = cv.imread("./test/sign3.jpg") # Uncomment if you are reading an image
     #self.cvFrame = cv.flip(self.cvFrame,0) # Uncomment to flip the frame vertically
     #self.cvFrame = cv.flip(self.cvFrame,1) # Uncomment to flip the frame horizonally
-    #self.cvFrame = cv.imread("./test/sign3.jpg") # Uncomment if you are reading an image
     self.frame = self.cv2pil(self.cvFrame)
 
     return self.cvFrame, self.frame

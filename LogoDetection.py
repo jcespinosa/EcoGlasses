@@ -167,7 +167,7 @@ def fill(color, original):
   return color, ROI
 
 # ==========================================================================
-# smoth
+# smooth
 #
 # Applies three possible smooth techniques, Gaussian blur, median filter
 # or binary threshold

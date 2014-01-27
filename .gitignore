@@ -19,6 +19,7 @@
 #database.yml
 #doc/
 *.swp
+*.pyc
 *~
 .project
 .DS_Store
