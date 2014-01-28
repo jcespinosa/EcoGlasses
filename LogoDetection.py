@@ -15,12 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.#
 ########################################################################
 
-
-# ------------------------------ NOTES ---------------------------------
-# GIMP HSV range: (360,100,100)
-# OpenCV HSV range:(180,255,255)
-# ----------------------------------------------------------------------
-
 import cPickle as pickle
 import cv2 as cv
 import numpy as np
@@ -30,10 +24,14 @@ from FeatureDetection import PATHS
 
 
 # Posible logos to be detected
-LOGOS = ["metrorrey", "lala", "chocokrispis"]
+LOGOS = ["kellogs"]
 
 TEMPLATES = dict()
 
+# ------------------------------ NOTES ---------------------------------
+# GIMP HSV range: (360,100,100)
+# OpenCV HSV range:(180,255,255)
+# ----------------------------------------------------------------------
 
 # ======================================================================
 # loadKeypoints
@@ -41,24 +39,28 @@ TEMPLATES = dict()
 # TODO
 #
 # ======================================================================
-def loadKeypoints(logoName):
+def loadKeypoints(path):
   keypoints = []
 
-  with open(PATHS["keypoints"] + logoName + ".kp", "rb") as inputFile:
-    kArray = pickle.load(inputFile)
+  try:
+    with open(PATHS["keypoints"] + path + ".kp", "rb") as inputFile:
+      kArray = pickle.load(inputFile)
 
-  for point in kArray:
-    feature = cv.KeyPoint(
-      x=point[0][0],
-      y=point[0][1],
-      _size=point[1],
-      _angle=point[2],
-      _response=point[3],
-      _octave=point[4],
-      _class_id=point[5]
-    )
+    for point in kArray:
+      feature = cv.KeyPoint(
+        x=point[0][0],
+        y=point[0][1],
+        _size=point[1],
+        _angle=point[2],
+        _response=point[3],
+        _octave=point[4],
+        _class_id=point[5]
+      )
 
-    keypoints.append(feature)
+      keypoints.append(feature)      
+
+  except:
+    return False
 
   return keypoints
 
@@ -72,11 +74,29 @@ def loadSURF():
   global TEMPLATES, LOGOS
 
   for logo in LOGOS:
-    TEMPLATES[logo] = {
-      "keypoints": loadKeypoints(logo),
-      "descriptors": np.load(PATHS["descriptors"] + logo + ".npy"),
-      "array": np.load(PATHS["arrays"] + logo + ".npy")
-    }
+    TEMPLATES[logo] = list()
+    count = 1
+    while(True):
+      path = "%s/%d"%(logo, count)
+
+      keypoints = loadKeypoints(path)
+      
+      if(not keypoints):
+        print "[!] Template for '%s' not found, the sequence is broken, end reached"%(path)
+        break
+
+      descriptors = np.load(PATHS["descriptors"] + path + ".npy")
+      array = np.load(PATHS["arrays"] + path + ".npy")
+
+      template = {
+        "keypoints": keypoints,
+        "descriptors": descriptors,
+        "array": array
+      }
+
+      print "[O] Loaded template for %s"%(path)
+      TEMPLATES[logo].append(template)
+      count += 1
 
   return
 
@@ -89,30 +109,31 @@ def loadSURF():
 # Returns True if the ROI corresponds to a possible signal template
 #
 # ======================================================================
-def SURFCompare(roi, image):
-  #print roi["keypoints"]
-  samples = roi["descriptors"]
-  responses = np.arange(len(roi["keypoints"]), dtype=np.float32)
+def SURFCompare(temp, image):
+  samples = temp["descriptors"]
+  responses = np.arange(len(temp["keypoints"]), dtype=np.float32)
 
   knn = cv.KNearest()
   knn.train(samples, responses)
 
-  for t in TEMPLATES:
-    for h, des in enumerate(TEMPLATES[t]["descriptors"]):
-      des = np.array(des,np.float32).reshape((1,128))
-      retval, results, neigh_resp, dists = knn.find_nearest(des,1)
-      res, dist = int(results[0][0]), dists[0][0]
+  for template in TEMPLATES:
+    pattern = TEMPLATES[template]
+    for t in pattern:
+      for h, des in enumerate(t["descriptors"]):
+        des = np.array(des,np.float32).reshape((1,128))
+        retval, results, neigh_resp, dists = knn.find_nearest(des,1)
+        res, dist = int(results[0][0]), dists[0][0]
 
-      if dist < 0.1: # draw matched keypoints in red color
-        color = (0,0,255)
-        print t
-      else:  # draw unmatched in blue color
-        color = (255,0,0)
+        if dist < 0.1: # draw matched keypoints in red color
+          color = (0,0,255)
+          print template
+        else:  # draw unmatched in blue color
+          color = (255,0,0)
 
-      #Draw matched key points on original image
-      x,y = roi["keypoints"][res].pt
-      center = (int(x),int(y))
-      cv.circle(image,center,2,color,-1)
+        #Draw matched key points on original image
+        x,y = temp["keypoints"][res].pt
+        center = (int(x),int(y))
+        cv.circle(image,center,2,color,-1)
 
   return True
 
@@ -158,4 +179,3 @@ def run(frame):
   frames = preprocessFrame(frame)
   SURFCompare(frames["temp"], frames["original"])
   return frames
-

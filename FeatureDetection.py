@@ -66,14 +66,13 @@ def FeatureDetector(cvImage=None, filename=None):
 
   imageGray = cv.cvtColor(inputImage, cv.COLOR_BGR2GRAY)
 
-  surfDetector = cv.SURF(hessian_threshold)
-  keypoints, descriptors = surfDetector.detectAndCompute(imageGray, None)
+  detector = cv.SURF(hessian_threshold)
+  keypoints, descriptors = detector.detectAndCompute(imageGray, None, useProvidedKeypoints = False)
 
+  template["image"] = inputImage
   template["array"] = imageGray
   template["keypoints"] = keypoints
   template["descriptors"] = descriptors
-
-  #print template
   
   return template
 
@@ -89,7 +88,21 @@ def saveKeypoints(filename, keypoints):
 
   return
 
-def detection(inputName, extension):
+def showFeatures(filename, temp):
+  for kp in temp["keypoints"]:
+    x = int(kp.pt[0])
+    y = int(kp.pt[1])
+    cv.circle(temp["image"], (x, y), 3, (0, 0, 0), -1)
+
+  while True:
+    cv.imshow("Features on %s"%(filename), temp["image"])
+    print "[!] Press ESC to continue"
+    if cv.waitKey(0) == 27: #(ESC)
+      cv.destroyWindow("Features on %s"%(filename))
+      break
+  return
+
+def detection(inputName, extension, show=False):
   imagePath = PATHS["logos"] + inputName + "/"
 
   if(os.path.exists(imagePath)):
@@ -101,33 +114,20 @@ def detection(inputName, extension):
         print "[!] File '%s' not found, the sequence is broken, end reached"%(filename)
         break
 
-      inputImage = cv.imread(filename)
-      imageGray = cv.cvtColor(inputImage, cv.COLOR_BGR2GRAY)
+      temp = FeatureDetector(filename = filename)
 
-      detector = cv.SURF(hessian_threshold)
-      keypoints, descriptors = detector.detectAndCompute(imageGray, None, useProvidedKeypoints = False)
+      saveKeypoints(PATHS["keypoints"] + inputName + "/" + str(count) + ".kp", temp["keypoints"])
+      np.save(PATHS["descriptors"] + inputName + "/" + str(count) + ".npy", temp["descriptors"])
+      np.save(PATHS["arrays"] + inputName + "/" + str(count) + ".npy", temp["array"])
 
-      saveKeypoints(PATHS["keypoints"] + inputName + "/" + str(count) + ".kp", keypoints)
-      np.save(PATHS["descriptors"] + inputName + "/" + str(count) + ".npy", descriptors)
-      np.save(PATHS["arrays"] + inputName + "/" + str(count) + ".npy", imageGray)
-
-      for kp in keypoints:
-        x = int(kp.pt[0])
-        y = int(kp.pt[1])
-        cv.circle(inputImage, (x, y), 3, (0, 0, 0))
-
-      while True:
-        cv.imshow("Features on %s"%(filename), inputImage)
-        print "[!] Press ESC to continue"
-        if cv.waitKey(0) == 27: #(ESC)
-          cv.destroyWindow("Features on %s"%(filename))
-          break
+      if(show):
+        showFeatures(filename, temp)
 
       print "[O] Processed '%s'"%(filename)
       count += 1
 
   else:
-    print "[X] Input name not found"
+    print "[X] Input name not found\n"
 
   return
 
@@ -152,19 +152,19 @@ def main():
   try:
     inputName = argv[1]
   except Exception, e:
-    print "[X] Error, 1 argument expected (InputName), optional (extension [png, jpg])"
+    print "[X] Error, 1 argument expected (InputName), optional (extension [png, jpg])\n"
     return
 
   try:
     extension = argv[2]
   except Exception, e:
-    print "[!] No extension specified, using default .png"
+    print "[!] No extension specified, using default .png\n"
     extension = "png"
 
   if(createPATHS(inputName)):
-    print "[O] Paths created"
+    print "[O] Paths created\n"
 
-  detection(inputName, extension)
+  detection(inputName, extension, show=True)
 
   return
 

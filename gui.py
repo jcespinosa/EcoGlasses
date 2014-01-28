@@ -159,7 +159,7 @@ def main():
 
     framerate += 1
     if(time() - start) >= 1.0:
-      #print framerate
+      print framerate
       framerate, start = 0, time()
   return
 
