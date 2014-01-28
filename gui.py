@@ -16,12 +16,12 @@
 ########################################################################
 
 import cv2 as cv
+import LogoDetection
 
+from time import time
 from Tkinter import *
 from PIL import Image, ImageTk
-from time import time
 
-import LogoDetection
 
 # ==========================================================================
 # App Class
@@ -83,8 +83,8 @@ class App(Frame):
 class Detection():
   def __init__(self):
     self.cameraIndex = 0
-    self.capture = cv.VideoCapture(self.cameraIndex) # Uncomment to capture the webcam
-    #self.capture = cv.VideoCapture("/path/to/video/file.abc") # Uncomment to capture a video file
+    self.capture = cv.VideoCapture(self.cameraIndex) # Uncomment to capture from webcam
+    #self.capture = cv.VideoCapture("/path/to/video/file.abc") # Uncomment to capture from a video file
     self.frame = None
     self.cvFrame = None
     return
@@ -118,14 +118,14 @@ class Detection():
     f = Image.fromstring("RGB", (w,h), frame.tostring(),'raw','BGR')
     return f
 
-  def debug(self, frames, colors, regions): # Shows auxiliary windows from OpenCV
-    for color in colors:
-      cv.imshow(color, colors[color])
+  def debug(self, frames): # Shows auxiliary windows from OpenCV
+    #for color in colors:
+    #  cv.imshow(color, colors[color])
     for frame in frames:
       cv.imshow(frame, frames[frame])
-    for region in regions:
-      for roi in regions[region]:
-        cv.imshow("roi", roi["roi"])
+    #for region in regions:
+    #  for roi in regions[region]:
+    #    cv.imshow("roi", roi["roi"])
     return
 
 # ==========================================================================
@@ -151,10 +151,10 @@ def main():
   while True:
     cvFrame, frame = detect.getFrame()
     if(frame):
-      frames, colors, regions = LogoDetection.run(cvFrame)
+      frames = LogoDetection.run(cvFrame)
       frame = detect.cv2pil(frames["original"])
       app.loadFrame(frame)
-      #detect.debug(frames, colors, regions)
+      #detect.debug(frames)
     root.update()
 
     framerate += 1
