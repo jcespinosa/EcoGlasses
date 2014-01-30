@@ -94,12 +94,13 @@ def showFeatures(filename, temp):
     y = int(kp.pt[1])
     cv.circle(temp["image"], (x, y), 3, (0, 0, 0), -1)
 
-  while True:
+  print "[!] Press ESC to continue"
+  while(True):
     cv.imshow("Features on %s"%(filename), temp["image"])
-    print "[!] Press ESC to continue"
-    if cv.waitKey(0) == 27: #(ESC)
+    if(cv.waitKey(33) == 1048603): #(ESC)
       cv.destroyWindow("Features on %s"%(filename))
       break
+
   return
 
 def detection(inputName, extension, show=False):
