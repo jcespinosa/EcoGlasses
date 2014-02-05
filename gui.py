@@ -17,8 +17,10 @@
 
 import cv2 as cv
 import LogoDetection
+import threading
+import Queue
 
-from time import time
+from time import time, sleep
 from Tkinter import *
 from PIL import Image, ImageTk
 
@@ -38,6 +40,8 @@ class App(Frame):
     self.buildUI(parent) 
     self.parent.config(menu=self.menubar)
     self.size = (640,480)
+    self.queue = Queue.Queue()
+    self.processQueue()
     return
         
   def buildUI(self, root):
@@ -72,6 +76,15 @@ class App(Frame):
       print e      
     return
 
+  def processQueue(self):
+    try:
+      message = self.queue.get(0)
+      print "[>] Processing a job %s"%(message["description"])
+      self.loadFrame(message["frame"]);
+    except Exception, e:
+      print "[X] No job on the queue %s"%(e)
+    self.parent.after(100, self.processQueue)
+
 # ==========================================================================
 # Detection Class
 #
@@ -80,33 +93,32 @@ class App(Frame):
 # Convert the frames from OpenCV to PIL images
 # 
 # ==========================================================================
-class Detection():
-  def __init__(self):
-    self.cameraIndex = 0
-    self.capture = cv.VideoCapture(self.cameraIndex) # Uncomment to capture from webcam
-    #self.capture = cv.VideoCapture("/path/to/video/file.abc") # Uncomment to capture from a video file
+class Detection(threading.Thread):
+  def __init__(self, queue):
+    threading.Thread.__init__(self)
+    self.capture = None
     self.frame = None
     self.cvFrame = None
+    self.queue = queue
     return
 
   def getFrame(self):
-    self.cameraIndex = 0
+    cameraIndex = 0
 
     # ======================================================
     # Comment this block if you are going to read a video file or image file
     c = cv.waitKey(10)
     if(c == "n"):
-      self.cameraIndex += 1
-      self.capture = cv.VideoCapture(self.cameraIndex)
+      cameraIndex += 1
+      self.capture = cv.VideoCapture(cameraIndex)
       frame = None
       if not self.capture:
-        self.cameraIndex = 0
-        self.capture = cv.VideoCapture(self.cameraIndex)
+        cameraIndex = 0
+        self.capture = cv.VideoCapture(cameraIndex)
         frame = None
     # ======================================================
 
     dump, self.cvFrame = self.capture.read()  # Uncomment if you are reading data from webcam or video file
-    #self.cvFrame = cv.imread("./test/sign3.jpg") # Uncomment if you are reading an image
     #self.cvFrame = cv.flip(self.cvFrame,0) # Uncomment to flip the frame vertically
     #self.cvFrame = cv.flip(self.cvFrame,1) # Uncomment to flip the frame horizonally
     self.frame = self.cv2pil(self.cvFrame)
@@ -119,13 +131,27 @@ class Detection():
     return f
 
   def debug(self, frames): # Shows auxiliary windows from OpenCV
-    #for color in colors:
-    #  cv.imshow(color, colors[color])
     for frame in frames:
       cv.imshow(frame, frames[frame])
-    #for region in regions:
-    #  for roi in regions[region]:
-    #    cv.imshow("roi", roi["roi"])
+    return
+
+  def run(self):
+    LogoDetection.loadSURF()
+    self.capture = cv.VideoCapture(0) # Uncomment to capture from webcam
+
+    #for i in range(10):
+    #  self.getFrame()
+
+    while True:
+      self.getFrame()
+      if(self.frame):
+        frames = LogoDetection.run(self.cvFrame)
+        frame = self.cv2pil(frames["original"])
+        self.queue.put({"description": "Update frame", "frame":frame})
+        #self.debug(frames)
+      sleep(0.1)
+      if(self.queue.qsize() > 5):
+        break
     return
 
 # ==========================================================================
@@ -140,29 +166,9 @@ class Detection():
 def main():
   root = Tk()
   app = App(root)
-  detect = Detection()
-  LogoDetection.loadSURF()
-
-  framerate, start = 0, time()
-
-  for i in range(10):
-    cvFrame, frame = detect.getFrame()
-
-  while True:
-    cvFrame, frame = detect.getFrame()
-    if(frame):
-      frames = LogoDetection.run(cvFrame)
-      frame = detect.cv2pil(frames["original"])
-      app.loadFrame(frame)
-      #detect.debug(frames)
-    root.update()
-
-    framerate += 1
-    if(time() - start) >= 1.0:
-      print framerate
-      framerate, start = 0, time()
-  return
-
+  detect = Detection(app.queue)
+  detect.start()
+  root.mainloop()
+  
 if(__name__=="__main__"):
     main()
-
