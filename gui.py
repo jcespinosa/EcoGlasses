@@ -12,7 +12,7 @@
 # GNU General Public License for more details.                         #
 #                                                                      #
 # You should have received a copy of the GNU General Public License    #
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.#
+# along with this program. If not, see <http://www.gnu.org/licenses/>. #
 ########################################################################
 
 import cv2 as cv
@@ -24,7 +24,6 @@ from time import time, sleep
 from Tkinter import *
 from PIL import Image, ImageTk
 
-
 # ==========================================================================
 # App Class
 #
@@ -35,11 +34,11 @@ from PIL import Image, ImageTk
 class App(Frame):
   def __init__(self, parent):
     Frame.__init__(self, parent)
+    self.windowSize = {'width': 1280, 'height': 720}
     self.parent = parent
     #self.pack_propagate(1) # Experimental, comment and uncomment to check the behavior of the UI
     self.buildUI(parent) 
     self.parent.config(menu=self.menubar)
-    self.size = (640,480)
     self.queue = Queue.Queue()
     self.processQueue()
     return
@@ -58,20 +57,30 @@ class App(Frame):
     self.menubar.add_cascade(label="Menu 1", menu=self.filemenu)
 
     self.canvasContainer = Frame(self.parent).grid(row=0, column=0)
-    self.videoCanvas = Canvas(self.canvasContainer, width=640, height=480)
+    self.videoCanvas = Canvas(self.canvasContainer, width=self.windowSize['width'], height=self.windowSize['height'])
     self.videoCanvas.pack(side=LEFT, padx=5,pady=5)
+    return
 
-    self.infoContainer = Frame(self.parent).grid(row=0, column=1)
-         
+  def drawDetectionZone(self):
+    ww, wh = self.windowSize['width'], self.windowSize['height']
+    dw, dh = (350, 350)
+
+    x1 = (ww - dw)/2
+    y1 = (wh - dh)/2
+    x2 = x1 + dw
+    y2 = y1 + dh
+
+    self.videoCanvas.create_rectangle(x1, y1, x2, y2)
     return
 
   def loadFrame(self, frame):
-    w,h = self.size
+    w, h = self.windowSize['width'], self.windowSize['height']
     try:
       self.frame = ImageTk.PhotoImage(frame)
       self.videoCanvas.delete("all")
       self.videoCanvas.configure(width=w, height=h)
       self.videoCanvas.create_image(w/2, h/2, image=self.frame)
+      self.drawDetectionZone()
     except Exception, e:
       print e      
     return
@@ -84,6 +93,8 @@ class App(Frame):
     except Exception, e:
       print "[X] No job on the queue %s"%(e)
     self.parent.after(100, self.processQueue)
+    return
+
 
 # ==========================================================================
 # Detection Class
@@ -105,8 +116,6 @@ class Detection(threading.Thread):
   def getFrame(self):
     cameraIndex = 0
 
-    # ======================================================
-    # Comment this block if you are going to read a video file or image file
     c = cv.waitKey(10)
     if(c == "n"):
       cameraIndex += 1
@@ -115,18 +124,16 @@ class Detection(threading.Thread):
       if not self.capture:
         cameraIndex = 0
         self.capture = cv.VideoCapture(cameraIndex)
-        frame = None
-    # ======================================================
+        frame = None   
 
-    dump, self.cvFrame = self.capture.read()  # Uncomment if you are reading data from webcam or video file
-    #self.cvFrame = cv.flip(self.cvFrame,0) # Uncomment to flip the frame vertically
-    #self.cvFrame = cv.flip(self.cvFrame,1) # Uncomment to flip the frame horizonally
+    dump, self.cvFrame = self.capture.read()
+    #self.cvFrame = cv.flip(self.cvFrame, 0) # Uncomment to flip the frame vertically
+    self.cvFrame = cv.flip(self.cvFrame, 1) # Uncomment to flip the frame horizonally
     self.frame = self.cv2pil(self.cvFrame)
-
     return self.cvFrame, self.frame
 
   def cv2pil(self, frame):
-    h,w,n = frame.shape
+    h, w, d = frame.shape
     f = Image.fromstring("RGB", (w,h), frame.tostring(),'raw','BGR')
     return f
 
@@ -139,16 +146,12 @@ class Detection(threading.Thread):
     LogoDetection.loadSURF()
     self.capture = cv.VideoCapture(0) # Uncomment to capture from webcam
 
-    #for i in range(10):
-    #  self.getFrame()
-
     while True:
       self.getFrame()
       if(self.frame):
         frames = LogoDetection.run(self.cvFrame)
-        frame = self.cv2pil(frames["original"])
-        self.queue.put({"description": "Update frame", "frame":frame})
-        #self.debug(frames)
+        frame = self.cv2pil(frames['original'])
+        self.queue.put({'description': 'Update frame', 'frame': frame})
       sleep(0.1)
       if(self.queue.qsize() > 5):
         break

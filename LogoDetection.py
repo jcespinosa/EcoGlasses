@@ -24,7 +24,7 @@ from FeatureDetection import PATHS
 
 
 # Posible logos to be detected
-LOGOS = ["kellogs"]
+LOGOS = ['kellogs']
 
 TEMPLATES = dict()
 
@@ -43,7 +43,7 @@ def loadKeypoints(path):
   keypoints = []
 
   try:
-    with open(PATHS["keypoints"] + path + ".kp", "rb") as inputFile:
+    with open(PATHS['keypoints'] + path + '.kp', 'rb') as inputFile:
       kArray = pickle.load(inputFile)
 
     for point in kArray:
@@ -64,6 +64,7 @@ def loadKeypoints(path):
 
   return keypoints
 
+
 # ======================================================================
 # loadSURF
 #
@@ -77,7 +78,7 @@ def loadSURF():
     TEMPLATES[logo] = list()
     count = 1
     while(True):
-      path = "%s/%d"%(logo, count)
+      path = '%s/%d'%(logo, count)
 
       keypoints = loadKeypoints(path)
       
@@ -85,16 +86,16 @@ def loadSURF():
         print "[!] Template for '%s' not found, the sequence is broken, end reached"%(path)
         break
 
-      descriptors = np.load(PATHS["descriptors"] + path + ".npy")
-      array = np.load(PATHS["arrays"] + path + ".npy")
+      descriptors = np.load(PATHS['descriptors'] + path + '.npy')
+      array = np.load(PATHS['arrays'] + path + '.npy')
 
       template = {
-        "keypoints": keypoints,
-        "descriptors": descriptors,
-        "array": array
+        'keypoints': keypoints,
+        'descriptors': descriptors,
+        'array': array
       }
 
-      print "[O] Loaded template for %s"%(path)
+      print '[O] Loaded template for %s'%(path)
       TEMPLATES[logo].append(template)
       count += 1
 
@@ -110,8 +111,8 @@ def loadSURF():
 #
 # ======================================================================
 def SURFCompare(temp, image):
-  samples = temp["descriptors"]
-  responses = np.arange(len(temp["keypoints"]), dtype=np.float32)
+  samples = temp['descriptors']
+  responses = np.arange(len(temp['keypoints']), dtype=np.float32)
 
   knn = cv.KNearest()
   knn.train(samples, responses)
@@ -119,7 +120,7 @@ def SURFCompare(temp, image):
   for template in TEMPLATES:
     pattern = TEMPLATES[template]
     for t in pattern:
-      for h, des in enumerate(t["descriptors"]):
+      for h, des in enumerate(t['descriptors']):
         des = np.array(des,np.float32).reshape((1,128))
         retval, results, neigh_resp, dists = knn.find_nearest(des,1)
         res, dist = int(results[0][0]), dists[0][0]
@@ -131,7 +132,7 @@ def SURFCompare(temp, image):
           color = (255,0,0)
 
         #Draw matched key points on original image
-        x,y = temp["keypoints"][res].pt
+        x,y = temp['keypoints'][res].pt
         center = (int(x),int(y))
         cv.circle(image,center,2,color,-1)
 
@@ -154,6 +155,23 @@ def smooth(image, mat=(3,3)):
 
 
 # ======================================================================
+# getROI
+#
+#
+#
+# ======================================================================
+def getROI(image):
+  fh, fw, fd = image.shape
+  bh, bw = (350, 350)
+
+  x = (fw - bw)/2
+  y = (fh - bh)/2
+
+  roi = image[y:y+bh, x:x+bw]
+  return roi
+
+
+# ======================================================================
 # preprocessFrame
 #
 # Gets the original frame and converts it to the HSV space
@@ -162,10 +180,12 @@ def smooth(image, mat=(3,3)):
 #
 # ======================================================================
 def preprocessFrame(frame):
-  frames = {"original": frame}
-  frames["blur"] = smooth(frame, mat=(15,15))
-  frames["hsv"] = cv.cvtColor(frame, cv.COLOR_BGR2HSV);
-  frames["temp"] = SURFDetector(cvImage=frame)
+  frames = {'original': frame}
+  roi = getROI(frame)
+  frames['roi'] = roi
+  frames['blur'] = smooth(roi, mat=(15,15))
+  frames['hsv'] = cv.cvtColor(roi, cv.COLOR_BGR2HSV);
+  #frames['temp'] = SURFDetector(cvImage=roi)
   return frames
 
 
@@ -177,5 +197,5 @@ def preprocessFrame(frame):
 # ======================================================================
 def run(frame):
   frames = preprocessFrame(frame)
-  SURFCompare(frames["temp"], frames["original"])
+  #SURFCompare(frames['temp'], frames['original'])
   return frames
