@@ -12,7 +12,7 @@
 # GNU General Public License for more details.                         #
 #                                                                      #
 # You should have received a copy of the GNU General Public License    # 
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.#
+# along with this program. If not, see <http://www.gnu.org/licenses/>. #
 ########################################################################
 
 from sys import argv
@@ -22,10 +22,10 @@ import cPickle as pickle
 import os
 
 # ======================================================================
-# surfDetector
+# FeatureDetection
 #
 # Gets an external filename
-# Uses the SURF Feature detection method to obtain the keypoints
+# Uses the SURF or SIFT Feature detection method to obtain the keypoints
 # and descriptors from the image
 # Saves the keypoints on a *.kp file
 # Saves the image and descriptors on a *.npy file
@@ -44,7 +44,7 @@ PATHS = {
 hessian_threshold = 5000
 
 # ==========================================================================
-# SURFDetector
+# FeatureDetector
 #
 # Gets an image
 # If the parameter is a filename, sets the path to the filename and reads it
@@ -53,10 +53,8 @@ hessian_threshold = 5000
 # descriptors
 #
 # ==========================================================================
-
 def FeatureDetector(cvImage=None, filename=None):
   template = dict()
-  hessian_threshold = 5000
 
   if(filename is not None):
     inputImage = cv.imread(filename)
@@ -67,15 +65,21 @@ def FeatureDetector(cvImage=None, filename=None):
   imageGray = cv.cvtColor(inputImage, cv.COLOR_BGR2GRAY)
 
   detector = cv.SURF(hessian_threshold)
-  keypoints, descriptors = detector.detectAndCompute(imageGray, None, useProvidedKeypoints = False)
+  #detector = cv.SIFT()
+  keypoints, descriptors = detector.detectAndCompute(imageGray, None, useProvidedKeypoints=False)
 
   template["image"] = inputImage
   template["array"] = imageGray
   template["keypoints"] = keypoints
   template["descriptors"] = descriptors
-  
   return template
 
+
+# ======================================================================
+# saveKeypoints
+#
+#
+# ======================================================================
 def saveKeypoints(filename, keypoints):
   kArray = []
 
@@ -85,9 +89,44 @@ def saveKeypoints(filename, keypoints):
   
   with open(filename, "wb") as outputFile:
     pickle.dump(kArray, outputFile)
-
   return
 
+
+# ======================================================================
+# loadKeypoints
+#
+# TODO
+#
+# ======================================================================
+def loadKeypoints(filename):
+  keypoints = []
+
+  try:
+    with open(filename, 'rb') as inputFile:
+      kArray = pickle.load(inputFile)
+
+    for point in kArray:
+      feature = cv.KeyPoint(
+        x=point[0][0],
+        y=point[0][1],
+        _size=point[1],
+        _angle=point[2],
+        _response=point[3],
+        _octave=point[4],
+        _class_id=point[5]
+      )
+
+      keypoints.append(feature)      
+  except:
+    return False, None
+  return True, keypoints
+
+
+# ======================================================================
+# showFeatures
+#
+#
+# ======================================================================
 def showFeatures(filename, temp):
   for kp in temp["keypoints"]:
     x = int(kp.pt[0])
@@ -97,12 +136,19 @@ def showFeatures(filename, temp):
   print "[!] Press ESC to continue"
   while(True):
     cv.imshow("Features on %s"%(filename), temp["image"])
-    if(cv.waitKey(33) == 1048603): #(ESC)
+    c = cv.waitKey(33)
+    print 'You pressed %d (0x%x), LSB: %d (%s)' % (c, c, c % 256, repr(chr(c%256)) if c%256 < 128 else '?')
+    if(c == 27): #(ESC)
       cv.destroyWindow("Features on %s"%(filename))
       break
-
   return
 
+
+# ======================================================================
+# detection
+#
+#
+# ======================================================================
 def detection(inputName, extension, show=False):
   imagePath = PATHS["logos"] + inputName + "/"
 
@@ -129,9 +175,14 @@ def detection(inputName, extension, show=False):
 
   else:
     print "[X] Input name not found\n"
-
   return
 
+
+# ======================================================================
+# createPATHS
+#
+#
+# ======================================================================
 def createPATHS(inputName):
   flag = False
 
@@ -144,9 +195,12 @@ def createPATHS(inputName):
     if(not os.path.exists(p)):
       os.mkdir(p)
       flag = True
-
   return flag
 
+
+# ======================================================================
+# main
+# ======================================================================
 def main():
   inputName = ""
 
@@ -166,7 +220,6 @@ def main():
     print "[O] Paths created\n"
 
   detection(inputName, extension, show=True)
-
   return
 
 if(__name__ == "__main__"):

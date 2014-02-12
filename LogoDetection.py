@@ -12,57 +12,19 @@
 # GNU General Public License for more details.                         #
 #                                                                      #
 # You should have received a copy of the GNU General Public License    # 
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.#
+# along with this program. If not, see <http://www.gnu.org/licenses/>. #
 ########################################################################
 
 import cPickle as pickle
 import cv2 as cv
 import numpy as np
 
-from FeatureDetection import FeatureDetector as SURFDetector
-from FeatureDetection import PATHS
-
+from FeatureDetection import FeatureDetector, loadKeypoints, PATHS
+from time import sleep
 
 # Posible logos to be detected
-LOGOS = ['kellogs']
-
+LOGOS = ['kellogs2']
 TEMPLATES = dict()
-
-# ------------------------------ NOTES ---------------------------------
-# GIMP HSV range: (360,100,100)
-# OpenCV HSV range:(180,255,255)
-# ----------------------------------------------------------------------
-
-# ======================================================================
-# loadKeypoints
-#
-# TODO
-#
-# ======================================================================
-def loadKeypoints(path):
-  keypoints = []
-
-  try:
-    with open(PATHS['keypoints'] + path + '.kp', 'rb') as inputFile:
-      kArray = pickle.load(inputFile)
-
-    for point in kArray:
-      feature = cv.KeyPoint(
-        x=point[0][0],
-        y=point[0][1],
-        _size=point[1],
-        _angle=point[2],
-        _response=point[3],
-        _octave=point[4],
-        _class_id=point[5]
-      )
-
-      keypoints.append(feature)      
-
-  except:
-    return False
-
-  return keypoints
 
 
 # ======================================================================
@@ -71,7 +33,7 @@ def loadKeypoints(path):
 # TODO
 #
 # ======================================================================
-def loadSURF():
+def loadFeatures():
   global TEMPLATES, LOGOS
 
   for logo in LOGOS:
@@ -80,7 +42,7 @@ def loadSURF():
     while(True):
       path = '%s/%d'%(logo, count)
 
-      keypoints = loadKeypoints(path)
+      a, keypoints = loadKeypoints(PATHS['keypoints'] + path + '.kp')
       
       if(not keypoints):
         print "[!] Template for '%s' not found, the sequence is broken, end reached"%(path)
@@ -98,7 +60,6 @@ def loadSURF():
       print '[O] Loaded template for %s'%(path)
       TEMPLATES[logo].append(template)
       count += 1
-
   return
 
 
@@ -133,9 +94,8 @@ def SURFCompare(temp, image):
 
         #Draw matched key points on original image
         x,y = temp['keypoints'][res].pt
-        center = (int(x),int(y))
-        cv.circle(image,center,2,color,-1)
-
+        center = (int(x), int(y))
+        cv.circle(image, center, 2, color, -1)
   return True
 
 
@@ -172,6 +132,24 @@ def getROI(image):
 
 
 # ======================================================================
+# combineFrames
+#
+#
+#
+# ======================================================================
+def combineFrames(im1, im2):
+  im = im2
+  fh, fw, fd = im2.shape
+  bh, bw = (350, 350)
+
+  x = (fw - bw)/2
+  y = (fh - bh)/2
+
+  np.copyto(im[y:y+bh, x:x+bw], im1)
+  return im
+
+
+# ======================================================================
 # preprocessFrame
 #
 # Gets the original frame and converts it to the HSV space
@@ -181,11 +159,10 @@ def getROI(image):
 # ======================================================================
 def preprocessFrame(frame):
   frames = {'original': frame}
-  roi = getROI(frame)
-  frames['roi'] = roi
-  frames['blur'] = smooth(roi, mat=(15,15))
-  frames['hsv'] = cv.cvtColor(roi, cv.COLOR_BGR2HSV);
-  #frames['temp'] = SURFDetector(cvImage=roi)
+  frames['roi'] = getROI(frame)
+  #frames['blur'] = smooth(frames['roi'], mat=(15,15))
+  #frames['hsv'] = cv.cvtColor(frames['roi'], cv.COLOR_BGR2HSV);
+  frames['temp'] = FeatureDetector(cvImage=frames['roi'])
   return frames
 
 
@@ -197,5 +174,6 @@ def preprocessFrame(frame):
 # ======================================================================
 def run(frame):
   frames = preprocessFrame(frame)
-  #SURFCompare(frames['temp'], frames['original'])
+  SURFCompare(frames['temp'], frames['roi'])
+  frames['final'] = combineFrames(frames['roi'], frames['original'])
   return frames

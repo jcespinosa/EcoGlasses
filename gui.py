@@ -34,7 +34,7 @@ from PIL import Image, ImageTk
 class App(Frame):
   def __init__(self, parent):
     Frame.__init__(self, parent)
-    self.windowSize = {'width': 1280, 'height': 720}
+    self.windowSize = {'width': 640, 'height': 480}
     self.parent = parent
     #self.pack_propagate(1) # Experimental, comment and uncomment to check the behavior of the UI
     self.buildUI(parent) 
@@ -92,7 +92,7 @@ class App(Frame):
       self.loadFrame(message["frame"]);
     except Exception, e:
       print "[X] No job on the queue %s"%(e)
-    self.parent.after(100, self.processQueue)
+    self.parent.after(200, self.processQueue)
     return
 
 
@@ -100,7 +100,7 @@ class App(Frame):
 # Detection Class
 #
 # Prepares the different ways to get the input data 
-# Reads a frame from webcam, video file or image
+# Reads a frame from webcam
 # Convert the frames from OpenCV to PIL images
 # 
 # ==========================================================================
@@ -128,7 +128,7 @@ class Detection(threading.Thread):
 
     dump, self.cvFrame = self.capture.read()
     #self.cvFrame = cv.flip(self.cvFrame, 0) # Uncomment to flip the frame vertically
-    self.cvFrame = cv.flip(self.cvFrame, 1) # Uncomment to flip the frame horizonally
+    #self.cvFrame = cv.flip(self.cvFrame, 1) # Uncomment to flip the frame horizonally
     self.frame = self.cv2pil(self.cvFrame)
     return self.cvFrame, self.frame
 
@@ -137,33 +137,26 @@ class Detection(threading.Thread):
     f = Image.fromstring("RGB", (w,h), frame.tostring(),'raw','BGR')
     return f
 
-  def debug(self, frames): # Shows auxiliary windows from OpenCV
-    for frame in frames:
-      cv.imshow(frame, frames[frame])
-    return
-
   def run(self):
-    LogoDetection.loadSURF()
+    LogoDetection.loadFeatures()
     self.capture = cv.VideoCapture(0) # Uncomment to capture from webcam
 
     while True:
       self.getFrame()
       if(self.frame):
         frames = LogoDetection.run(self.cvFrame)
-        frame = self.cv2pil(frames['original'])
+        frame = self.cv2pil(frames['final'])
+        print frames
         self.queue.put({'description': 'Update frame', 'frame': frame})
-      sleep(0.1)
+      sleep(0.2)
       if(self.queue.qsize() > 5):
         break
     return
 
+
 # ==========================================================================
 # Main
 #
-# Initializes all the classes
-# Loads the signal templates in memory
-# Calculates the framerate
-# Runs the signal detection algorithm
 #
 # ==========================================================================
 def main():
