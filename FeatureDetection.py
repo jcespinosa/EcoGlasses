@@ -21,6 +21,7 @@ import numpy as np
 import cPickle as pickle
 import os
 
+
 # ======================================================================
 # FeatureDetection
 #
@@ -41,7 +42,7 @@ PATHS = {
   "logos": "./logos/"
 }
 
-hessian_threshold = 5000
+#hessian_threshold = 5000
 
 # ==========================================================================
 # FeatureDetector
@@ -64,8 +65,8 @@ def FeatureDetector(cvImage=None, filename=None):
 
   imageGray = cv.cvtColor(inputImage, cv.COLOR_BGR2GRAY)
 
-  detector = cv.SURF(hessian_threshold)
-  #detector = cv.SIFT()
+  #detector = cv.SURF(hessian_threshold)
+  detector = cv.SIFT()
   keypoints, descriptors = detector.detectAndCompute(imageGray, None, useProvidedKeypoints=False)
 
   template["image"] = inputImage
@@ -145,11 +146,11 @@ def showFeatures(filename, temp):
 
 
 # ======================================================================
-# detection
+# extraction
 #
 #
 # ======================================================================
-def detection(inputName, extension, show=False):
+def extraction(inputName, extension, show=False):
   imagePath = PATHS["logos"] + inputName + "/"
 
   if(os.path.exists(imagePath)):
@@ -219,7 +220,7 @@ def main():
   if(createPATHS(inputName)):
     print "[O] Paths created\n"
 
-  detection(inputName, extension, show=True)
+  extraction(inputName, extension, show=True)
   return
 
 if(__name__ == "__main__"):

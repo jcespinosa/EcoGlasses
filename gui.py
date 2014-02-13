@@ -24,6 +24,7 @@ from time import time, sleep
 from Tkinter import *
 from PIL import Image, ImageTk
 
+
 # ==========================================================================
 # App Class
 #
@@ -70,7 +71,7 @@ class App(Frame):
     x2 = x1 + dw
     y2 = y1 + dh
 
-    self.videoCanvas.create_rectangle(x1, y1, x2, y2)
+    self.videoCanvas.create_rectangle(x1, y1, x2, y2, width=3.0)
     return
 
   def loadFrame(self, frame):
@@ -146,7 +147,6 @@ class Detection(threading.Thread):
       if(self.frame):
         frames = LogoDetection.run(self.cvFrame)
         frame = self.cv2pil(frames['final'])
-        print frames
         self.queue.put({'description': 'Update frame', 'frame': frame})
       sleep(0.2)
       if(self.queue.qsize() > 5):

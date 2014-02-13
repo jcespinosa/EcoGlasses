@@ -22,13 +22,13 @@ import numpy as np
 from FeatureDetection import FeatureDetector, loadKeypoints, PATHS
 from time import sleep
 
+
 # Posible logos to be detected
 LOGOS = ['kellogs2']
 TEMPLATES = dict()
 
-
 # ======================================================================
-# loadSURF
+# loadFeatures
 #
 # TODO
 #
@@ -74,6 +74,9 @@ def loadFeatures():
 def SURFCompare(temp, image):
   samples = temp['descriptors']
   responses = np.arange(len(temp['keypoints']), dtype=np.float32)
+
+  if(samples == None):
+    return False
 
   knn = cv.KNearest()
   knn.train(samples, responses)
