@@ -23,6 +23,7 @@ import Queue
 from time import time, sleep
 from Tkinter import *
 from PIL import Image, ImageTk
+from sys import argv
 
 
 # ==========================================================================
@@ -63,11 +64,8 @@ class App(Frame):
     return
 
   def drawDetectionZone(self):
-    ww, wh = self.windowSize['width'], self.windowSize['height']
-    dw, dh = (350, 350)
+    x1, y1, dh, dw = LogoDetection.calculateROI((self.windowSize['height'], self.windowSize['width'], None))
 
-    x1 = (ww - dw)/2
-    y1 = (wh - dh)/2
     x2 = x1 + dw
     y2 = y1 + dh
 
@@ -106,12 +104,13 @@ class App(Frame):
 # 
 # ==========================================================================
 class Detection(threading.Thread):
-  def __init__(self, queue):
+  def __init__(self, queue, detectionMethod):
     threading.Thread.__init__(self)
     self.capture = None
     self.frame = None
     self.cvFrame = None
     self.queue = queue
+    self.method = detectionMethod
     return
 
   def getFrame(self):
@@ -139,13 +138,17 @@ class Detection(threading.Thread):
     return f
 
   def run(self):
-    LogoDetection.loadFeatures()
+    if(self.method != 'template'):
+      LogoDetection.loadFeatures()
+    else:
+      LogoDetection.loadTemplates()
+
     self.capture = cv.VideoCapture(0) # Uncomment to capture from webcam
 
     while True:
       self.getFrame()
       if(self.frame):
-        frames = LogoDetection.run(self.cvFrame)
+        frames = LogoDetection.run(self.cvFrame, method=self.method)
         frame = self.cv2pil(frames['final'])
         self.queue.put({'description': 'Update frame', 'frame': frame})
       sleep(0.2)
@@ -156,13 +159,20 @@ class Detection(threading.Thread):
 
 # ==========================================================================
 # Main
-#
-#
 # ==========================================================================
 def main():
+  detectionMethod = 'template'
+
+  try:
+    detectionMethod = argv[1]
+  except Exception, e:
+    print '[!] One argument expected (detectionMethod [template, matcher, svm, knn])'
+    print '[!] No detection method specified, using default "template"\n'
+    sleep(5)
+
   root = Tk()
   app = App(root)
-  detect = Detection(app.queue)
+  detect = Detection(app.queue, detectionMethod)
   detect.start()
   root.mainloop()
   

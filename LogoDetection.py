@@ -19,13 +19,18 @@ import cPickle as pickle
 import cv2 as cv
 import numpy as np
 
+from KNN import run as runKNN
+from SVM import run as runSVM
+from TemplateMatcher import run as runTemplateMatcher
+from FeatureMatcher import run as runFeatureMatcher
+
 from FeatureDetection import FeatureDetector, loadKeypoints, PATHS
 from time import sleep
 
 
 # Posible logos to be detected
-LOGOS = ['kellogs2']
-TEMPLATES = dict()
+LOGO_NAMES = ['kellogs2']
+LOGOS = dict()
 
 # ======================================================================
 # loadFeatures
@@ -34,13 +39,13 @@ TEMPLATES = dict()
 #
 # ======================================================================
 def loadFeatures():
-  global TEMPLATES, LOGOS
+  global LOGOS, LOGO_NAMES
 
-  for logo in LOGOS:
-    TEMPLATES[logo] = list()
+  for name in LOGO_NAMES:
+    LOGOS[name] = list()
     count = 1
     while(True):
-      path = '%s/%d'%(logo, count)
+      path = '%s/%d'%(name, count)
 
       a, keypoints = loadKeypoints(PATHS['keypoints'] + path + '.kp')
       
@@ -58,49 +63,37 @@ def loadFeatures():
       }
 
       print '[O] Loaded template for %s'%(path)
-      TEMPLATES[logo].append(template)
+      LOGOS[name].append(template)
       count += 1
   return
 
 
 # ======================================================================
-# SURFCompare
+# loadFeatures
 #
-# Gets each individual ROI, keypoints and descriptors
-# Compares the keypoints and descriptors with each signal template
-# Returns True if the ROI corresponds to a possible signal template
+# TODO
 #
 # ======================================================================
-def SURFCompare(temp, image):
-  samples = temp['descriptors']
-  responses = np.arange(len(temp['keypoints']), dtype=np.float32)
+def loadTemplates():
+  global LOGOS, LOGO_NAMES
 
-  if(samples == None):
-    return False
+  for name in LOGO_NAMES:
+    LOGOS[name] = list()
+    count = 1
+    while(True):
+      path = '%s/%d'%(name, count)
 
-  knn = cv.KNearest()
-  knn.train(samples, responses)
+      try:
+        template = cv.imread(PATHS['logos'] + path + '.png')
+        template = cv.cvtColor(template, cv.COLOR_BGR2GRAY)
+      except Exception, e:
+        print "[!] Template for '%s' not found, the sequence is broken, end reached [%s]"%(path, e)
+        break
 
-  for template in TEMPLATES:
-    pattern = TEMPLATES[template]
-    for t in pattern:
-      for h, des in enumerate(t['descriptors']):
-        des = np.array(des,np.float32).reshape((1,128))
-        retval, results, neigh_resp, dists = knn.find_nearest(des,1)
-        res, dist = int(results[0][0]), dists[0][0]
-
-        if dist < 0.1: # draw matched keypoints in red color
-          color = (0,0,255)
-          print template
-        else:  # draw unmatched in blue color
-          color = (255,0,0)
-
-        #Draw matched key points on original image
-        x,y = temp['keypoints'][res].pt
-        center = (int(x), int(y))
-        cv.circle(image, center, 2, color, -1)
-  return True
-
+      print '[O] Loaded template for %s'%(path)
+      LOGOS[name].append(template)
+      count += 1
+  return
 
 # ======================================================================
 # smooth
@@ -111,8 +104,8 @@ def SURFCompare(temp, image):
 #
 # ======================================================================
 def smooth(image, mat=(3,3)):
-  dst = cv.GaussianBlur(image, mat, 15)
-  #dst = cv.medianBlur(image, 3)
+  #dst = cv.GaussianBlur(image, mat, 15)
+  dst = cv.medianBlur(image, 3)
   dump, dst = cv.threshold(dst, 100, 250, cv.THRESH_BINARY)
   return dst
 
@@ -120,34 +113,39 @@ def smooth(image, mat=(3,3)):
 # ======================================================================
 # getROI
 #
-#
+# TODO
 #
 # ======================================================================
-def getROI(image):
-  fh, fw, fd = image.shape
+def calculateROI(im):
+  fh, fw, fd = im.shape if(isinstance(im, np.ndarray)) else im
   bh, bw = (350, 350)
 
   x = (fw - bw)/2
   y = (fh - bh)/2
 
-  roi = image[y:y+bh, x:x+bw]
+  return x, y, bh, bw
+
+# ======================================================================
+# getROI
+#
+# TODO
+#
+# ======================================================================
+def getROI(im):
+  x, y, bh, bw = calculateROI(im)
+  roi = im[y:y+bh, x:x+bw]
   return roi
 
 
 # ======================================================================
 # combineFrames
 #
-#
+# TODO
 #
 # ======================================================================
 def combineFrames(im1, im2):
   im = im2
-  fh, fw, fd = im2.shape
-  bh, bw = (350, 350)
-
-  x = (fw - bw)/2
-  y = (fh - bh)/2
-
+  x, y, bh, bw = calculateROI(im2)
   np.copyto(im[y:y+bh, x:x+bw], im1)
   return im
 
@@ -163,8 +161,9 @@ def combineFrames(im1, im2):
 def preprocessFrame(frame):
   frames = {'original': frame}
   frames['roi'] = getROI(frame)
-  #frames['blur'] = smooth(frames['roi'], mat=(15,15))
-  #frames['hsv'] = cv.cvtColor(frames['roi'], cv.COLOR_BGR2HSV);
+  frames['gray'] = cv.cvtColor(frames['roi'], cv.COLOR_BGR2GRAY)
+  frames['blur'] = smooth(frames['roi'], mat=(15,15))
+  frames['hsv'] = cv.cvtColor(frames['roi'], cv.COLOR_BGR2HSV)
   frames['temp'] = FeatureDetector(cvImage=frames['roi'])
   return frames
 
@@ -175,8 +174,19 @@ def preprocessFrame(frame):
 # Gets the frame to be processed and sends it to all the detection process
 #
 # ======================================================================
-def run(frame):
+def run(frame, method=None):
   frames = preprocessFrame(frame)
-  SURFCompare(frames['temp'], frames['roi'])
-  frames['final'] = combineFrames(frames['roi'], frames['original'])
+  if(method):
+    print '[!] Using %s'%(method)
+    if(method == 'match'):
+      runFeatureMatcher(frames['temp'], frames['roi'], LOGOS)
+    elif(method == 'svm'):
+      runSVM(frames['temp'], frames['roi'], LOGOS)
+    elif(method == 'knn'):
+      runKNN(frames['temp'], frames['roi'], LOGOS)
+    else:
+      runTemplateMatcher(frames['gray'], frames['roi'], LOGOS)
+    frames['final'] = combineFrames(frames['roi'], frames['original'])
+  else:
+    frames['final'] = frames['original']
   return frames

@@ -79,6 +79,7 @@ def FeatureDetector(cvImage=None, filename=None):
 # ======================================================================
 # saveKeypoints
 #
+# TODO
 #
 # ======================================================================
 def saveKeypoints(filename, keypoints):
@@ -126,6 +127,7 @@ def loadKeypoints(filename):
 # ======================================================================
 # showFeatures
 #
+# TODO
 #
 # ======================================================================
 def showFeatures(filename, temp):
@@ -148,6 +150,7 @@ def showFeatures(filename, temp):
 # ======================================================================
 # extraction
 #
+# TODO
 #
 # ======================================================================
 def extraction(inputName, extension, show=False):
@@ -182,6 +185,7 @@ def extraction(inputName, extension, show=False):
 # ======================================================================
 # createPATHS
 #
+# TODO
 #
 # ======================================================================
 def createPATHS(inputName):
