@@ -66,7 +66,8 @@ def FeatureDetector(cvImage=None, filename=None):
   imageGray = cv.cvtColor(inputImage, cv.COLOR_BGR2GRAY)
 
   #detector = cv.SURF(hessian_threshold)
-  detector = cv.SIFT()
+  #detector = cv.SIFT()
+  detector = cv.ORB()
   keypoints, descriptors = detector.detectAndCompute(imageGray, None, useProvidedKeypoints=False)
 
   template["image"] = inputImage

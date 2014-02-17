@@ -66,8 +66,7 @@ class App(Frame):
   def drawDetectionZone(self):
     x1, y1, dh, dw = LogoDetection.calculateROI((self.windowSize['height'], self.windowSize['width'], None))
 
-    x2 = x1 + dw
-    y2 = y1 + dh
+    x2, y2 = x1 + dw, y1 + dh
 
     self.videoCanvas.create_rectangle(x1, y1, x2, y2, width=3.0)
     return

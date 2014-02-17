@@ -17,6 +17,7 @@
 
 import cv2 as cv
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 # ======================================================================
@@ -28,10 +29,15 @@ import numpy as np
 def run(temp, image, LOGOS):
   for name, logo in LOGOS.iteritems():
     for template in logo:
+      w, h = template.shape[::-1]
       res = cv.matchTemplate(temp,template,cv.TM_CCOEFF_NORMED)
-      threshold = 0.8
+      threshold = 0.5
       loc = np.where( res >= threshold)
       for pt in zip(*loc[::-1]):
         cv.rectangle(image, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
+      plt.subplot(121),plt.imshow(res,cmap = 'gray')
+      plt.title('Matching Result'), plt.xticks([]), plt.yticks([])
+      plt.subplot(122),plt.imshow(image,cmap = 'gray')
+      plt.title('Detected Point'), plt.xticks([]), plt.yticks([])
+      plt.suptitle('Hola')
   return True
-

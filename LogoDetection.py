@@ -18,14 +18,17 @@
 import cPickle as pickle
 import cv2 as cv
 import numpy as np
-
-from KNN import run as runKNN
-from SVM import run as runSVM
-from TemplateMatcher import run as runTemplateMatcher
-from FeatureMatcher import run as runFeatureMatcher
+import sys
 
 from FeatureDetection import FeatureDetector, loadKeypoints, PATHS
 from time import sleep
+
+sys.path.append('./lib/')
+
+from KNN import run as runKNN
+#from SVM import run as runSVM
+from TemplateMatcher import run as runTemplateMatcher
+from FeatureMatcher import run as runFeatureMatcher
 
 
 # Posible logos to be detected
@@ -85,15 +88,20 @@ def loadTemplates():
 
       try:
         template = cv.imread(PATHS['logos'] + path + '.png')
-        template = cv.cvtColor(template, cv.COLOR_BGR2GRAY)
       except Exception, e:
-        print "[!] Template for '%s' not found, the sequence is broken, end reached [%s]"%(path, e)
+        print "[X] %s" % (e)
         break
 
+      if(template == None):
+        print "[!] Template for '%s' not found, the sequence is broken, end reached" % (path)
+        break
+
+      template = cv.cvtColor(template, cv.COLOR_BGR2GRAY)
       print '[O] Loaded template for %s'%(path)
       LOGOS[name].append(template)
       count += 1
   return
+
 
 # ======================================================================
 # smooth
