@@ -18,12 +18,16 @@
 import cPickle as pickle
 import cv2 as cv
 import numpy as np
-import sys
+import traceback
+
+from Tkinter import *
+from PIL import Image, ImageTk
+from sys import argv, path, getsizeof
 
 from FeatureDetection import FeatureDetector, loadKeypoints, PATHS
-from time import sleep
+from MySocket import ServerSocket
 
-sys.path.append('./lib/')
+path.append('./lib/')
 
 from KNN import run as runKNN
 #from SVM import run as runSVM
@@ -35,12 +39,13 @@ from FeatureMatcher import run as runFeatureMatcher
 LOGO_NAMES = ['kellogs2']
 LOGOS = dict()
 
-# ======================================================================
+
+# ==========================================================================
 # loadFeatures
 #
 # TODO
 #
-# ======================================================================
+# ==========================================================================
 def loadFeatures():
   global LOGOS, LOGO_NAMES
 
@@ -53,7 +58,7 @@ def loadFeatures():
       a, keypoints = loadKeypoints(PATHS['keypoints'] + path + '.kp')
       
       if(not keypoints):
-        print "[!] Template for '%s' not found, the sequence is broken, end reached"%(path)
+        print "[!] Template for '%s' not found, the sequence is broken, end reached" % (path)
         break
 
       descriptors = np.load(PATHS['descriptors'] + path + '.npy')
@@ -65,18 +70,18 @@ def loadFeatures():
         'array': array
       }
 
-      print '[O] Loaded template for %s'%(path)
+      print '[O] Loaded template for %s' % (path)
       LOGOS[name].append(template)
       count += 1
   return
 
 
-# ======================================================================
+# ==========================================================================
 # loadFeatures
 #
 # TODO
 #
-# ======================================================================
+# ==========================================================================
 def loadTemplates():
   global LOGOS, LOGO_NAMES
 
@@ -102,99 +107,108 @@ def loadTemplates():
       count += 1
   return
 
-
-# ======================================================================
-# smooth
-#
-# Applies three possible smooth techniques, Gaussian blur, median filter
-# or binary threshold
-# Return the processed frame.
-#
-# ======================================================================
-def smooth(image, mat=(3,3)):
-  #dst = cv.GaussianBlur(image, mat, 15)
-  dst = cv.medianBlur(image, 3)
-  dump, dst = cv.threshold(dst, 100, 250, cv.THRESH_BINARY)
-  return dst
-
-
-# ======================================================================
-# getROI
+# ==========================================================================
+# loadFeatures
 #
 # TODO
 #
-# ======================================================================
-def calculateROI(im):
-  fh, fw, fd = im.shape if(isinstance(im, np.ndarray)) else im
-  bh, bw = (350, 350)
+# ==========================================================================
+def detect(frames, method):
+  if(method):
+    if(method == 'matcher'):
+      runFeatureMatcher(frames['temp'], frames['final'], LOGOS)
+    elif(method == 'svm'):
+      runSVM(frames['temp'], frames['final'], LOGOS)
+    elif(method == 'knn'):
+      runKNN(frames['temp'], frames['final'], LOGOS)
+    else:
+      runTemplateMatcher(frames['gray'], frames['final'], LOGOS)
+  else:
+    frames['final'] = frames['hsv']
+  return frames
 
-  x = (fw - bw)/2
-  y = (fh - bh)/2
-
-  return x, y, bh, bw
-
-# ======================================================================
-# getROI
-#
-# TODO
-#
-# ======================================================================
-def getROI(im):
-  x, y, bh, bw = calculateROI(im)
-  roi = im[y:y+bh, x:x+bw]
-  return roi
-
-
-# ======================================================================
-# combineFrames
-#
-# TODO
-#
-# ======================================================================
-def combineFrames(im1, im2):
-  im = im2
-  x, y, bh, bw = calculateROI(im2)
-  np.copyto(im[y:y+bh, x:x+bw], im1)
-  return im
-
-
-# ======================================================================
+# ==========================================================================
 # preprocessFrame
 #
-# Gets the original frame and converts it to the HSV space
-# Applies a smoothing technique to the frame
-# Saves each processed frame in a dictionary
+# TODO
 #
-# ======================================================================
+# ==========================================================================
 def preprocessFrame(frame):
-  frames = {'original': frame}
-  frames['roi'] = getROI(frame)
-  frames['gray'] = cv.cvtColor(frames['roi'], cv.COLOR_BGR2GRAY)
-  frames['blur'] = smooth(frames['roi'], mat=(15,15))
-  frames['hsv'] = cv.cvtColor(frames['roi'], cv.COLOR_BGR2HSV)
-  frames['temp'] = FeatureDetector(cvImage=frames['roi'])
+  print '[>] Preprocessing frame ...'
+  frames = {'original': frame, 'final': frame}
+  frames['gray'] = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+  #frames['blur'] = smooth(frame, mat=(15,15))
+  frames['hsv'] = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+  frames['temp'] = FeatureDetector(cvImage=frame)
+  print '[O] Frame is ready ...'
   return frames
 
+# ==========================================================================
+# decode
+#
+# TODO
+#
+# ==========================================================================
+def decode(message):
+  try:
+    dPIL = Image.fromstring('RGB', (350, 350), message, 'raw','BGR')
+    dCV = np.array(dPIL)
+    dCV = cv.cvtColor(dCV, cv.COLOR_RGB2BGR)
+  except Exception, e:
+    print '[X] Error decoding message: %s' % (e)
+    dCV, dPIL = None, None
+  return dCV, dPIL
 
-# ======================================================================
-# run
-#
-# Gets the frame to be processed and sends it to all the detection process
-#
-# ======================================================================
-def run(frame, method=None):
-  frames = preprocessFrame(frame)
-  if(method):
-    print '[!] Using %s'%(method)
-    if(method == 'match'):
-      runFeatureMatcher(frames['temp'], frames['roi'], LOGOS)
-    elif(method == 'svm'):
-      runSVM(frames['temp'], frames['roi'], LOGOS)
-    elif(method == 'knn'):
-      runKNN(frames['temp'], frames['roi'], LOGOS)
-    else:
-      runTemplateMatcher(frames['gray'], frames['roi'], LOGOS)
-    frames['final'] = combineFrames(frames['roi'], frames['original'])
+# ==========================================================================
+# Main
+# ==========================================================================
+def main():
+  detectionMethod = 'template'
+
+  try:
+    detectionMethod = argv[1]
+  except Exception, e:
+    print '[!] One argument expected (detectionMethod [template, matcher, svm, knn])'
+    
+  print '[!] Using detection method "%s"\n' % (detectionMethod)
+
+  if(detectionMethod == 'template'):
+    print '[>] Loading templates ...'
+    loadTemplates()
   else:
-    frames['final'] = frames['original']
-  return frames
+    print '[>] Loading features ...'
+    loadFeatures()
+  print '[O] Loaded'
+
+  s = ServerSocket(port=9999)
+  s.bind()
+  s.wait()
+
+  while(True):
+    print '[>] Waiting for a frame ...'
+
+    data = s.receive()
+
+    if('CLOSE' in data):
+      break
+
+    dCV, dPIL = decode(data)
+
+    if(dCV is not None):
+      frames = preprocessFrame(dCV)
+      frames = detect(frames, detectionMethod)
+      cv.imshow('from socket', frames['final'])
+      if(cv.waitKey(1) == 23):
+        break
+      s.send('Recibi tu frame, graciasEND')
+    else:
+      s.send('Error al recibir tu frameEND')
+
+
+  s.closeClient()
+  s.close()
+  cv.destroyAllWindows()
+  return
+
+if(__name__ == '__main__'):
+  main()
