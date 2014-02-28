@@ -18,10 +18,8 @@
 import cPickle as pickle
 import cv2 as cv
 import numpy as np
-import traceback
 
-from Tkinter import *
-from PIL import Image, ImageTk
+from PIL import Image
 from sys import argv, path, getsizeof
 
 from FeatureDetection import FeatureDetector, loadKeypoints, PATHS
@@ -200,9 +198,9 @@ def main():
       cv.imshow('from socket', frames['final'])
       if(cv.waitKey(1) == 23):
         break
-      s.send('Recibi tu frame, graciasEND')
+      s.send('[O] Frame decoded successfullyEND')
     else:
-      s.send('Error al recibir tu frameEND')
+      s.send('[X] Error decoding frameEND')
 
 
   s.closeClient()

@@ -98,11 +98,11 @@ class App(Frame):
   def processQueue(self):
     try:
       message = self.queue.get(0)
-      print "[>] Processing a job (%s) ..." % (message['description'])
+      #print "[>] Processing a job (%s) ..." % (message['description'])
       self.loadFrame(message["frame"]);
     except Exception, e:
       print "[X] No job on App queue %s" % (e)
-    self.parent.after(200, self.processQueue)
+    self.parent.after(100, self.processQueue)
     return
 
 
@@ -160,7 +160,7 @@ class Detection(threading.Thread):
       sleep(1.0)
       if(self.stop):
         break
-        
+
     s.send('CLOSEEND')
     s.close()
     print '[!] Terminating Detection thread'
@@ -213,7 +213,7 @@ class Capture(threading.Thread):
       if(self.frame):
         detect.detect(self.roi)
         app.queue.put({'description': 'Update frame', 'frame': self.frame})
-      sleep(0.2)
+        sleep(0.1)
       if(self.stop):
         break
 

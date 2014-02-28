@@ -37,8 +37,7 @@ except:
 # TODO
 #
 # ======================================================================
-def exploreMatch(roi, kp_pairs, status = None, H = None):
-  draw = roi
+def exploreMatch(image, kp_pairs, status = None, H = None):
   #h1, w1 = (350, 350)
   #h2, w2 = img2.shape[:2]
   #vis = np.zeros((max(h1, h2), w1+w2), np.uint8)
@@ -58,12 +57,12 @@ def exploreMatch(roi, kp_pairs, status = None, H = None):
   #p2 = np.int32([kpp[1].pt for kpp in kp_pairs]) + (w1, 0)
 
   for (x1, y1), inlier in zip(p, status):
-    cv.circle(draw, (x1, y1), 3, (255, 0, 0), -1)
+    cv.circle(image, (x1, y1), 3, (255, 0, 0), -1)
     if inlier:
       matches += 1
-      cv.circle(draw, (x1, y1), 3, (0, 255, 0), -1)
+      cv.circle(image, (x1, y1), 3, (0, 255, 0), -1)
     
-  return matches, draw
+  return matches
 
 
 # ======================================================================
@@ -107,7 +106,7 @@ def run(temp, image, LOGOS):
         H, status = None, None
         #print '%d matches found, not enough for homography estimation' % len(p1)
 
-      matches, draw = exploreMatch(image, kp_pairs, status, H)
+      matches = exploreMatch(image, kp_pairs, status, H)
       print matches
 
   return
