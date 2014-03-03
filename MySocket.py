@@ -64,9 +64,9 @@ class ServerSocket(Socket):
     print "[>] Waiting for client data ..."
     data = ''
     while(True):
-      d = self.client.recv(1024)
-      if('END' in d):
-        data += d.replace('END', '')
+      d = self.client.recv(2048)
+      if('|END' in d):
+        data += d.replace('|END', '')
         break
       data += d
     print '[O] Received %d bytes' % (getsizeof(data))
@@ -74,7 +74,7 @@ class ServerSocket(Socket):
 
   def send(self, message):
     print "[>] Sending message to client ... "
-    self.client.send(message)
+    self.client.sendall(message)
     return
 
   def closeClient(self):
@@ -106,9 +106,9 @@ class ClientSocket(Socket):
     print "[>] Waiting for server data ..."
     data = ''
     while(True):
-      d = self.socket.recv(1024)
-      if('END' in d):
-        data += d.replace('END', '')
+      d = self.socket.recv(2048)
+      if('|END' in d):
+        data += d.replace('|END', '')
         break
       data += d
     print '[O] Received %d bytes' % (getsizeof(data))
@@ -116,5 +116,5 @@ class ClientSocket(Socket):
 
   def send(self, message):
     print "[>] Sending message to server ... "
-    self.socket.send(message)
+    self.socket.sendall(message)
     return

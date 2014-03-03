@@ -18,10 +18,12 @@
 import cv2 as cv
 import numpy as np
 import threading
+import traceback
 import Queue
 
 from MySocket import ClientSocket
 
+from json import dumps, loads
 from sys import getsizeof
 from time import sleep
 from Tkinter import *
@@ -41,7 +43,7 @@ class App(Frame):
     parent.wm_protocol ("WM_DELETE_WINDOW", self.onClose)
     self.windowSize = {'width': 640, 'height': 480}
     self.parent = parent
-    #self.pack_propagate(1) # Experimental, comment and uncomment to check the behavior of the UI
+    self.widgets = dict()
     self.buildUI(parent) 
     self.parent.config(menu=self.menubar)
     self.queue = Queue.Queue()
@@ -50,15 +52,14 @@ class App(Frame):
 
   def onClose(self):
     print '[O] Terminating App thread, destroying GUI'
-    self.parent.destroy()
-    self.parent.quit()
     detect.stop = True
     capture.stop = True
+    self.parent.destroy()
+    self.parent.quit()
 
   def buildUI(self, root):
     print '[>] Creating UI ...'
     self.parent.title('Logo detection')
-    #self.pack() # Experimental, comment and uncomment to check the behavior of the UI
 
     self.menubar = Menu(root)
     self.filemenu = Menu(self.menubar, tearoff=0)
@@ -72,15 +73,18 @@ class App(Frame):
     self.canvasContainer = Frame(self.parent).grid(row=0, column=0)
     self.videoCanvas = Canvas(self.canvasContainer, width=self.windowSize['width'], height=self.windowSize['height'])
     self.videoCanvas.pack(side=LEFT, padx=5,pady=5)
+
+    self.outline = 'black'
+    self.message = 'Waiting ...'
+
     print '[O] UI ready ...'
     return
 
-  def drawDetectionZone(self):
+  def updateWidgets(self):
     x1, y1, h, w = calculateROI((self.windowSize['height'], self.windowSize['width'], None))
-
     x2, y2 = x1 + w, y1 + h
-
-    self.videoCanvas.create_rectangle(x1, y1, x2, y2, width=3.0, dash=(4,8))
+    self.videoCanvas.create_rectangle(x1, y1, x2, y2, width=3.0, dash=(4,8), outline=self.outline)
+    self.videoCanvas.create_text(320, 430, fill=self.outline, text=self.message)
     return
 
   def loadFrame(self, frame):
@@ -90,19 +94,31 @@ class App(Frame):
       self.videoCanvas.delete("all")
       self.videoCanvas.configure(width=w, height=h)
       self.videoCanvas.create_image(w/2, h/2, image=self.frame)
-      self.drawDetectionZone()
     except Exception, e:
       print e      
     return
 
+  def processTask(self, task):
+    t = task['task']
+    if(t == 0):
+      self.loadFrame(task['frame']);
+    elif(t == 1):
+      self.outline = task['color']
+    elif(t == 2):
+      self.message = task['message']
+    else:
+      pass
+    self.updateWidgets()
+    return
+
   def processQueue(self):
     try:
-      message = self.queue.get(0)
-      #print "[>] Processing a job (%s) ..." % (message['description'])
-      self.loadFrame(message["frame"]);
+      task = self.queue.get(0)
     except Exception, e:
       print "[X] No job on App queue %s" % (e)
-    self.parent.after(100, self.processQueue)
+      task = {'task': 100}
+    self.processTask(task)
+    self.parent.after(60, self.processQueue)
     return
 
 
@@ -119,20 +135,37 @@ class Detection(threading.Thread):
     self.stop = False
 
   def encode(self, message):
-    eSTR = message.tostring()
+    eSTR = message.tostring() + '|END'
     return eSTR
 
   def decode(self, message):
-    dPIL = Image.fromstring('RGB', (350, 350), message, 'raw', 'BGR')
-    dCV = np.array(dPIL)
-    dCV = cv.cvtColor(dCV, cv.COLOR_RGB2BGR)
-    return dCV, dPIL
+    try:
+      message = loads(message)
+    except Exception, e:
+      message = False
+      print '[X] Error decoding the message from the server' + '%s' % (e)
+    return message
 
   def detect(self, frame):
     if(self.state == 'idle'):
       message = self.encode(frame)
-      self.state = 'busy'
       self.queue.put(message)
+      self.state = 'busy'
+    return
+
+  def processResult(self, res):
+    res = self.decode(res)
+    if(res):
+      state = int(res['state'])
+      if(state == 0):
+        app.queue.put({'task': 1, 'color': 'black'})
+        app.queue.put({'task': 2, 'message': 'Nothing detected'})
+      elif(state == 1):
+        app.queue.put({'task': 1, 'color': 'green'})
+        app.queue.put({'task': 2, 'message': res['message']})
+      else:
+        app.queue.put({'task': 1, 'color': 'red'})
+        app.queue.put({'task': 2, 'message': 'Error!'})
     return
 
   def processQueue(self, s):
@@ -140,10 +173,9 @@ class Detection(threading.Thread):
       message = self.queue.get(0)
       print '[>] Sending frame to detection server (%d bytes)...' % (getsizeof(message))
       s.send(message)
-      s.send('END')
-      data = s.receive()
-      if(data):
-        print data
+      result = s.receive()
+      if(result):
+        self.processResult(result)
       self.state = 'idle'
     except Exception, e:
       print "[X] No job on Detection queue %s" % (e)
@@ -161,7 +193,7 @@ class Detection(threading.Thread):
       if(self.stop):
         break
 
-    s.send('CLOSEEND')
+    s.send('CLOSE|END')
     s.close()
     print '[!] Terminating Detection thread'
     return
@@ -212,7 +244,7 @@ class Capture(threading.Thread):
       self.getFrame()
       if(self.frame):
         detect.detect(self.roi)
-        app.queue.put({'description': 'Update frame', 'frame': self.frame})
+        app.queue.put({'task': 0, 'frame': self.frame})
         sleep(0.1)
       if(self.stop):
         break

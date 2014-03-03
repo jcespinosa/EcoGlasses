@@ -19,6 +19,7 @@ import cPickle as pickle
 import cv2 as cv
 import numpy as np
 
+from json import dumps, loads
 from PIL import Image
 from sys import argv, path, getsizeof
 
@@ -73,7 +74,6 @@ def loadFeatures():
       count += 1
   return
 
-
 # ==========================================================================
 # loadFeatures
 #
@@ -106,40 +106,18 @@ def loadTemplates():
   return
 
 # ==========================================================================
-# loadFeatures
+# encode
 #
 # TODO
 #
 # ==========================================================================
-def detect(frames, method):
-  if(method):
-    if(method == 'matcher'):
-      runFeatureMatcher(frames['temp'], frames['final'], LOGOS)
-    elif(method == 'svm'):
-      runSVM(frames['temp'], frames['final'], LOGOS)
-    elif(method == 'knn'):
-      runKNN(frames['temp'], frames['final'], LOGOS)
-    else:
-      runTemplateMatcher(frames['gray'], frames['final'], LOGOS)
-  else:
-    frames['final'] = frames['hsv']
-  return frames
-
-# ==========================================================================
-# preprocessFrame
-#
-# TODO
-#
-# ==========================================================================
-def preprocessFrame(frame):
-  print '[>] Preprocessing frame ...'
-  frames = {'original': frame, 'final': frame}
-  frames['gray'] = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-  #frames['blur'] = smooth(frame, mat=(15,15))
-  frames['hsv'] = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-  frames['temp'] = FeatureDetector(cvImage=frame)
-  print '[O] Frame is ready ...'
-  return frames
+def encode(message):
+  try:
+    message = dumps(message) + '|END'
+  except Exception, e:
+    print e
+    message = '{"state":2}|END'
+  return message
 
 # ==========================================================================
 # decode
@@ -158,15 +136,72 @@ def decode(message):
   return dCV, dPIL
 
 # ==========================================================================
+# processResult
+#
+# TODO
+#
+# ==========================================================================
+def processResult(res):
+  result = {
+    'state': 0,
+    'message': 'Nothing detected'
+  }
+  if(res):
+    state, matches, logoName = res
+    result = {
+      'state': 1,
+      'message': 'Detected %s' % (logoName)
+    }
+  result = encode(result)
+  return result
+
+# ==========================================================================
+# loadFeatures
+#
+# TODO
+#
+# ==========================================================================
+def detect(frames, method):
+  if(method):
+    if(method == 'matcher'):
+      res = runFeatureMatcher(frames['temp'], frames['final'], LOGOS)
+    elif(method == 'svm'):
+      res = runSVM(frames['temp'], frames['final'], LOGOS)
+    elif(method == 'knn'):
+      res = runKNN(frames['temp'], frames['final'], LOGOS)
+    else:
+      res = runTemplateMatcher(frames['gray'], frames['final'], LOGOS)
+  else:
+    frames['final'] = frames['hsv']
+  res = processResult(res)
+  return frames, res
+
+# ==========================================================================
+# preprocessFrame
+#
+# TODO
+#
+# ==========================================================================
+def preprocessFrame(frame):
+  print '[>] Preprocessing frame ...'
+  frames = {'original': frame, 'final': frame}
+  frames['gray'] = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+  #frames['blur'] = smooth(frame, mat=(15,15))
+  frames['hsv'] = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+  frames['temp'] = FeatureDetector(cvImage=frame)
+  print '[O] Frame is ready ...'
+  return frames
+
+# ==========================================================================
 # Main
 # ==========================================================================
 def main():
-  detectionMethod = 'template'
+  detectionMethod = 'matcher'
 
   try:
     detectionMethod = argv[1]
   except Exception, e:
-    print '[!] One argument expected (detectionMethod [template, matcher, svm, knn])'
+    print '[!] One argument expected (detectionMethod [matcher, template, svm, knn])'
     
   print '[!] Using detection method "%s"\n' % (detectionMethod)
 
@@ -194,14 +229,14 @@ def main():
 
     if(dCV is not None):
       frames = preprocessFrame(dCV)
-      frames = detect(frames, detectionMethod)
+      frames, result = detect(frames, detectionMethod)
       cv.imshow('from socket', frames['final'])
       if(cv.waitKey(1) == 23):
         break
-      s.send('[O] Frame decoded successfullyEND')
     else:
-      s.send('[X] Error decoding frameEND')
-
+      result = processResult(False)
+    print result
+    s.send(result)
 
   s.closeClient()
   s.close()

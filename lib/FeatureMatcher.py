@@ -107,6 +107,9 @@ def run(temp, image, LOGOS):
         #print '%d matches found, not enough for homography estimation' % len(p1)
 
       matches = exploreMatch(image, kp_pairs, status, H)
-      print matches
 
-  return
+      if(matches > 3):
+        print 'Matches > %d' % (matches)
+        return (True, matches, name)
+
+  return False
