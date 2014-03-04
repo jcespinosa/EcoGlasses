@@ -96,10 +96,11 @@ def run(temp, image, LOGOS):
       desc1, desc2 = template['descriptors'], temp['descriptors']
       kp1, kp2 = template['keypoints'], temp['keypoints']
 
-      raw_matches = matcher.knnMatch(np.asarray(desc1, dtype=np.float32), trainDescriptors=np.asarray(desc2, dtype=np.float32), k=2) #2
+      #raw_matches = matcher.knnMatch(np.asarray(desc1, dtype=np.float32), trainDescriptors=np.asarray(desc2, dtype=np.float32), k=2) #2
+      raw_matches = matcher.knnMatch(np.asarray(desc1, dtype=np.float32), np.asarray(desc2, dtype=np.float32), k=2) #2
       p1, p2, kp_pairs = filterMatches(kp1, kp2, raw_matches)
 
-      if len(p1) >= 5:
+      if len(p1) >= 4:
         H, status = cv.findHomography(p1, p2, cv.RANSAC, 5.0)
         #print '%d / %d  inliers/matched' % (np.sum(status), len(status))
       else:
@@ -108,7 +109,7 @@ def run(temp, image, LOGOS):
 
       matches = exploreMatch(image, kp_pairs, status, H)
 
-      if(matches > 3):
+      if(matches >= 3):
         print 'Matches > %d' % (matches)
         return (True, matches, name)
 

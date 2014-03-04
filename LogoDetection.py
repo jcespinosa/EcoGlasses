@@ -35,7 +35,7 @@ from FeatureMatcher import run as runFeatureMatcher
 
 
 # Posible logos to be detected
-LOGO_NAMES = ['kellogs2']
+LOGO_NAMES = ['kellogs', 'lala', 'quaker']
 LOGOS = dict()
 
 

@@ -142,7 +142,7 @@ def showFeatures(filename, temp):
     cv.imshow("Features on %s"%(filename), temp["image"])
     c = cv.waitKey(33)
     print 'You pressed %d (0x%x), LSB: %d (%s)' % (c, c, c % 256, repr(chr(c%256)) if c%256 < 128 else '?')
-    if(c == 27): #(ESC)
+    if((c % 256) == 27): #(ESC)
       cv.destroyWindow("Features on %s"%(filename))
       break
   return

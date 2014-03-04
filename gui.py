@@ -118,7 +118,7 @@ class App(Frame):
       print "[X] No job on App queue %s" % (e)
       task = {'task': 100}
     self.processTask(task)
-    self.parent.after(60, self.processQueue)
+    self.parent.after(40, self.processQueue)
     return
 
 
