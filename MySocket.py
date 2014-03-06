@@ -22,24 +22,24 @@ from sys import argv, getsizeof
 
 
 class Socket(threading.Thread):
-  def __init__(self, host="localhost", port=9999):
+  def __init__(self, host='localhost', port=9999):
     threading.Thread.__init__(self)
     self.host = host
     self.port = port
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
   def close(self):
-    print "[O] Connection terminated"
+    print '[O] Connection terminated'
     self.socket.close()
     return
 
 
 class ServerSocket(Socket):
-  def __init__(self, host="localhost", port=9999):
+  def __init__(self, host='localhost', port=9999):
     Socket.__init__(self, host, port)
 
   def bind(self):
-    print "[>] Opening a new socket:"
+    print '[!] Opening a new socket:'
     print " Host >> %s" % (self.host)
     print " Port >> %d\n" % (self.port)
 
@@ -50,18 +50,18 @@ class ServerSocket(Socket):
       print " Exception >> %s\n" % (e)
       return
     finally:
-      print "[O] The socket is ready..."
+      print '[O] The socket is ready'
       return
 
   def wait(self):
-    print "[>] Waiting for client connection"
+    print '[>] Waiting for client connection ...'
     self.socket.listen(1)
     self.client, self.host = self.socket.accept()
-    print "[O] Connection established"
+    print '[O] Connection established'
     return
 
   def receive(self):
-    print "[>] Waiting for client data ..."
+    print '[>] Waiting for client request ...'
     data = ''
     while(True):
       d = self.client.recv(2048)
@@ -69,11 +69,11 @@ class ServerSocket(Socket):
         data += d.replace('|END', '')
         break
       data += d
-    print '[O] Received %d bytes' % (getsizeof(data))
+    print "[O] Received %d bytes from client" % (getsizeof(data))
     return data
 
   def send(self, message):
-    print "[>] Sending message to client ... "
+    print "[>] Sending message to client (%d bytes) ..." % (getsizeof(message))
     self.client.sendall(message)
     return
 
@@ -88,7 +88,7 @@ class ClientSocket(Socket):
     Socket.__init__(self, host, port)
 
   def connect(self):
-    print "[>] Attempting to connect to:"
+    print '[!] Attempting to connect to:'
     print " Host >> %s" % (self.host)
     print " Port >> %d\n" % (self.port)
 
@@ -99,11 +99,11 @@ class ClientSocket(Socket):
       print " Exception >> %s\n" % (e)
       return
     finally:
-      print "[O] Connection established"
+      print '[O] Connection established'
       return
 
   def receive(self):
-    print "[>] Waiting for server data ..."
+    print '[>] Waiting for server response ...'
     data = ''
     while(True):
       d = self.socket.recv(2048)
@@ -111,10 +111,10 @@ class ClientSocket(Socket):
         data += d.replace('|END', '')
         break
       data += d
-    print '[O] Received %d bytes' % (getsizeof(data))
+    print "[O] Received %d bytes from server" % (getsizeof(data))
     return data
 
   def send(self, message):
-    print "[>] Sending message to server ... "
+    print "[>] Sending message to server (%d bytes) ..." % (getsizeof(message))
     self.socket.sendall(message)
     return

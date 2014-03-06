@@ -24,7 +24,6 @@ import Queue
 from MySocket import ClientSocket
 
 from json import dumps, loads
-from sys import getsizeof
 from time import sleep
 from Tkinter import *
 from PIL import Image, ImageTk
@@ -40,7 +39,7 @@ from PIL import Image, ImageTk
 class App(Frame):
   def __init__(self, parent):
     Frame.__init__(self, parent)
-    parent.wm_protocol ("WM_DELETE_WINDOW", self.onClose)
+    parent.wm_protocol ('WM_DELETE_WINDOW', self.onClose)
     self.windowSize = {'width': 640, 'height': 480}
     self.parent = parent
     self.widgets = dict()
@@ -77,7 +76,7 @@ class App(Frame):
     self.outline = 'black'
     self.message = 'Waiting ...'
 
-    print '[O] UI ready ...'
+    print '[O] UI ready'
     return
 
   def updateWidgets(self):
@@ -115,10 +114,51 @@ class App(Frame):
     try:
       task = self.queue.get(0)
     except Exception, e:
-      print "[X] No job on App queue %s" % (e)
+      print "[!] No job on App queue %s" % (e)
       task = {'task': 100}
     self.processTask(task)
     self.parent.after(40, self.processQueue)
+    return
+
+
+# ==========================================================================
+# Client
+#
+#
+# ==========================================================================
+class Client():
+  def __init__(self):
+    self.socket = ClientSocket()
+    self.socket.connect()
+
+  def encode(self, message):
+    eSTR = message.tostring() + '|END'
+    return eSTR
+
+  def decode(self, message):
+    try:
+      message = loads(message)
+    except Exception, e:
+      message = False
+      print "[X] Error decoding the message from the server %s" % (e)
+    return message
+
+  def send(self, message):
+    message = self.encode(message)
+    self.socket.send(message)
+    return
+
+  def receive(self):
+    message = self.socket.receive()
+    if(message):
+      message = self.decode(message)
+    else:
+      message = False
+    return message
+
+  def close(self):
+    self.socket.send('CLOSE|END')
+    self.socket.close()
     return
 
 
@@ -134,27 +174,13 @@ class Detection(threading.Thread):
     self.state = None
     self.stop = False
 
-  def encode(self, message):
-    eSTR = message.tostring() + '|END'
-    return eSTR
-
-  def decode(self, message):
-    try:
-      message = loads(message)
-    except Exception, e:
-      message = False
-      print '[X] Error decoding the message from the server' + '%s' % (e)
-    return message
-
-  def detect(self, frame):
+  def enqueue(self, frame):
     if(self.state == 'idle'):
-      message = self.encode(frame)
-      self.queue.put(message)
+      self.queue.put(frame)
       self.state = 'busy'
     return
 
   def processResult(self, res):
-    res = self.decode(res)
     if(res):
       state = int(res['state'])
       if(state == 0):
@@ -166,35 +192,30 @@ class Detection(threading.Thread):
       else:
         app.queue.put({'task': 1, 'color': 'red'})
         app.queue.put({'task': 2, 'message': 'Error!'})
+    self.state = 'idle'
     return
 
   def processQueue(self, s):
     try:
-      message = self.queue.get(0)
-      print '[>] Sending frame to detection server (%d bytes)...' % (getsizeof(message))
-      s.send(message)
+      print '[>] Sending frame to detection server ...'
+      s.send(self.queue.get(0))
       result = s.receive()
-      if(result):
-        self.processResult(result)
-      self.state = 'idle'
+      self.processResult(result)
     except Exception, e:
-      print "[X] No job on Detection queue %s" % (e)
+      print "[!] No job on Detection queue %s" % (e)
     return
 
   def run(self):
     self.state = 'idle'
 
-    s = ClientSocket()
-    s.connect()
-
+    s = Client()
     while(True):
       self.processQueue(s)
       sleep(1.0)
       if(self.stop):
         break
-
-    s.send('CLOSE|END')
     s.close()
+
     print '[!] Terminating Detection thread'
     return
 
@@ -221,7 +242,7 @@ class Capture(threading.Thread):
     cameraIndex = 0
 
     c = cv.waitKey(10)
-    if(c == "n"):
+    if(c == 'n'):
       cameraIndex += 1
       self.capture = cv.VideoCapture(cameraIndex)
       frame = None
@@ -243,7 +264,7 @@ class Capture(threading.Thread):
     while True:
       self.getFrame()
       if(self.frame):
-        detect.detect(self.roi)
+        detect.enqueue(self.roi)
         app.queue.put({'task': 0, 'frame': self.frame})
         sleep(0.1)
       if(self.stop):

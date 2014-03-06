@@ -21,7 +21,7 @@ import numpy as np
 
 from json import dumps, loads
 from PIL import Image
-from sys import argv, path, getsizeof
+from sys import argv, path
 
 from FeatureDetection import FeatureDetector, loadKeypoints, PATHS
 from MySocket import ServerSocket
@@ -37,6 +37,53 @@ from FeatureMatcher import run as runFeatureMatcher
 # Posible logos to be detected
 LOGO_NAMES = ['kellogs', 'lala', 'quaker']
 LOGOS = dict()
+
+
+# ==========================================================================
+# Server
+#
+#
+# ==========================================================================
+class Server():
+  def __init__(self):
+    self.socket = ServerSocket(port=9999)
+    self.socket.bind()
+    self.socket.wait()
+
+  def encode(self, message):
+    try:
+      message = dumps(message) + '|END'
+    except Exception, e:
+      print e
+      message = '{"state":2}|END'
+    return message
+
+  def decode(self, message):
+    try:
+      dPIL = Image.fromstring('RGB', (350, 350), message, 'raw','BGR')
+      dCV = np.array(dPIL)
+      dCV = cv.cvtColor(dCV, cv.COLOR_RGB2BGR)
+    except Exception, e:
+      print '[X] Error decoding message: %s' % (e)
+      dCV, dPIL = None, None
+    return dCV, dPIL
+
+  def send(self, message):
+    message = self.encode(message)
+    self.socket.send(message)
+    return
+
+  def receive(self):
+    message = self.socket.receive()
+    if('CLOSE' in message):
+      return False
+    message = self.decode(message)
+    return message
+
+  def close(self):
+    self.socket.closeClient()
+    self.socket.close()
+    return
 
 
 # ==========================================================================
@@ -106,36 +153,6 @@ def loadTemplates():
   return
 
 # ==========================================================================
-# encode
-#
-# TODO
-#
-# ==========================================================================
-def encode(message):
-  try:
-    message = dumps(message) + '|END'
-  except Exception, e:
-    print e
-    message = '{"state":2}|END'
-  return message
-
-# ==========================================================================
-# decode
-#
-# TODO
-#
-# ==========================================================================
-def decode(message):
-  try:
-    dPIL = Image.fromstring('RGB', (350, 350), message, 'raw','BGR')
-    dCV = np.array(dPIL)
-    dCV = cv.cvtColor(dCV, cv.COLOR_RGB2BGR)
-  except Exception, e:
-    print '[X] Error decoding message: %s' % (e)
-    dCV, dPIL = None, None
-  return dCV, dPIL
-
-# ==========================================================================
 # processResult
 #
 # TODO
@@ -152,7 +169,6 @@ def processResult(res):
       'state': 1,
       'message': 'Detected %s' % (logoName)
     }
-  result = encode(result)
   return result
 
 # ==========================================================================
@@ -213,19 +229,16 @@ def main():
     loadFeatures()
   print '[O] Loaded'
 
-  s = ServerSocket(port=9999)
-  s.bind()
-  s.wait()
-
+  s = Server()
   while(True):
     print '[>] Waiting for a frame ...'
 
     data = s.receive()
 
-    if('CLOSE' in data):
+    if(not data):
       break
 
-    dCV, dPIL = decode(data)
+    dCV, dPIL = data
 
     if(dCV is not None):
       frames = preprocessFrame(dCV)
@@ -238,7 +251,6 @@ def main():
     print result
     s.send(result)
 
-  s.closeClient()
   s.close()
   cv.destroyAllWindows()
   return
