@@ -28,6 +28,31 @@ class Socket(threading.Thread):
     self.port = port
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+  def encrypt(self, publicKey, message):
+    from Crypto.PublicKey import RSA
+    from Crypto.Cipher import PKCS1_OAEP
+    key = open(publicKey, 'r').read()
+    rsakey = RSA.importKey(key)
+    rsakey = PKCS1_OAEP.new(rsakey)
+    encrypted = rsakey.encrypt(message)
+    eMessage = encrypted.encode('base64')
+    return eMessage
+
+  def decrypt(self, privateKey, message):
+    from Crypto.PublicKey import RSA 
+    from Crypto.Cipher import PKCS1_OAEP 
+    from base64 import b64decode 
+    key = open(privateKey, 'r').read() 
+    rsakey = RSA.importKey(key) 
+    rsakey = PKCS1_OAEP.new(rsakey) 
+    dMessage = rsakey.decrypt(b64decode(package)) 
+    return dMessage
+
+  def compress(self, message, size=2046):
+    cMessage = [message[i:i+size] for i in range(0, len(message), size)]
+    cMessage.reverse()
+    return cMessage
+
   def close(self):
     print '[O] Connection terminated'
     self.socket.close()
@@ -62,19 +87,28 @@ class ServerSocket(Socket):
 
   def receive(self):
     print '[>] Waiting for client request ...'
-    data = ''
-    while(True):
-      d = self.client.recv(2048)
-      if('|END' in d):
-        data += d.replace('|END', '')
-        break
-      data += d
+    
+    data, chunk = '', ''
+    while('|LAST' not in data):
+      while('|END' not in chunk):
+        chunk += self.client.recv(512)
+      data += chunk.replace('|END', '')
+      chunk = ''
+    data = data.replace('|LAST', '')
+
     print "[O] Received %d bytes from client" % (getsizeof(data))
     return data
 
   def send(self, message):
     print "[>] Sending message to client (%d bytes) ..." % (getsizeof(message))
-    self.client.sendall(message)
+    message = self.compress(message)
+    print message
+    while(len(message) > 1):
+      m = message.pop() + '|END'
+      self.client.sendall(m)
+      print len(message)
+    m = message.pop() + '|END|LAST'
+    self.client.sendall(m)
     return
 
   def closeClient(self):
@@ -104,17 +138,26 @@ class ClientSocket(Socket):
 
   def receive(self):
     print '[>] Waiting for server response ...'
-    data = ''
-    while(True):
-      d = self.socket.recv(2048)
-      if('|END' in d):
-        data += d.replace('|END', '')
-        break
-      data += d
+
+    data, chunk = '', ''
+    while('|LAST' not in data):
+      while('|END' not in chunk):
+        chunk += self.socket.recv(512)
+      data += chunk.replace('|END', '')
+      chunk = ''
+    data = data.replace('|LAST', '')
+
     print "[O] Received %d bytes from server" % (getsizeof(data))
     return data
 
   def send(self, message):
     print "[>] Sending message to server (%d bytes) ..." % (getsizeof(message))
-    self.socket.sendall(message)
+    message = self.compress(message)
+    print message
+    while(len(message) > 1):
+      m = message.pop() + '|END'
+      self.socket.sendall(m)
+      print len(message)
+    m = message.pop() + '|END|LAST'
+    self.socket.sendall(m)
     return

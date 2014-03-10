@@ -132,7 +132,7 @@ class Client():
     self.socket.connect()
 
   def encode(self, message):
-    eSTR = message.tostring() + '|END'
+    eSTR = message.tostring()
     return eSTR
 
   def decode(self, message):
@@ -157,7 +157,7 @@ class Client():
     return message
 
   def close(self):
-    self.socket.send('CLOSE|END')
+    self.socket.send('CLOSE')
     self.socket.close()
     return
 

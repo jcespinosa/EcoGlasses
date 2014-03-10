@@ -18,6 +18,7 @@
 import cPickle as pickle
 import cv2 as cv
 import numpy as np
+import traceback
 
 from json import dumps, loads
 from PIL import Image
@@ -52,10 +53,10 @@ class Server():
 
   def encode(self, message):
     try:
-      message = dumps(message) + '|END'
+      message = dumps(message)
     except Exception, e:
       print e
-      message = '{"state":2}|END'
+      message = '{"state":2}'
     return message
 
   def decode(self, message):
