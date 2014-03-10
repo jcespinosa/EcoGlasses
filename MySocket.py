@@ -17,6 +17,7 @@
 
 import socket
 import threading
+import zlib
 
 from sys import argv, getsizeof
 
@@ -34,6 +35,7 @@ class Socket(threading.Thread):
     key = open(publicKey, 'r').read()
     rsakey = RSA.importKey(key)
     rsakey = PKCS1_OAEP.new(rsakey)
+    compressed = zlib.compress(message)
     encrypted = rsakey.encrypt(message)
     eMessage = encrypted.encode('base64')
     return eMessage
@@ -45,10 +47,11 @@ class Socket(threading.Thread):
     key = open(privateKey, 'r').read() 
     rsakey = RSA.importKey(key) 
     rsakey = PKCS1_OAEP.new(rsakey) 
-    dMessage = rsakey.decrypt(b64decode(package)) 
+    dMessage = rsakey.decrypt(b64decode(message))
+    dMessage = zlib.decompress(dMessage) 
     return dMessage
 
-  def compress(self, message, size=2046):
+  def segmentation(self, message, size=200):
     cMessage = [message[i:i+size] for i in range(0, len(message), size)]
     cMessage.reverse()
     return cMessage
@@ -92,7 +95,8 @@ class ServerSocket(Socket):
     while('|LAST' not in data):
       while('|END' not in chunk):
         chunk += self.client.recv(512)
-      data += chunk.replace('|END', '')
+      chunk = chunk.replace('|END', '')
+      data += self.decrypt('clientPrivateKey', chunk)
       chunk = ''
     data = data.replace('|LAST', '')
 
@@ -102,12 +106,12 @@ class ServerSocket(Socket):
   def send(self, message):
     print "[>] Sending message to client (%d bytes) ..." % (getsizeof(message))
     message = self.compress(message)
-    print message
     while(len(message) > 1):
-      m = message.pop() + '|END'
+      m = self.encrypt('serverPublicKey', message.pop())
+      m = m + '|END'
       self.client.sendall(m)
-      print len(message)
-    m = message.pop() + '|END|LAST'
+    m = self.encrypt('serverPublicKey', message.pop())
+    m = m + '|END|LAST'
     self.client.sendall(m)
     return
 
@@ -143,7 +147,8 @@ class ClientSocket(Socket):
     while('|LAST' not in data):
       while('|END' not in chunk):
         chunk += self.socket.recv(512)
-      data += chunk.replace('|END', '')
+      chunk = chunk.replace('|END', '')
+      data += self.decrypt('serverPrivateKey', chunk)
       chunk = ''
     data = data.replace('|LAST', '')
 
@@ -152,12 +157,12 @@ class ClientSocket(Socket):
 
   def send(self, message):
     print "[>] Sending message to server (%d bytes) ..." % (getsizeof(message))
-    message = self.compress(message)
-    print message
+    message = self.segmentation(message)
     while(len(message) > 1):
-      m = message.pop() + '|END'
+      m = self.encrypt('clientPublicKey', message.pop())
+      m = m + '|END'
       self.socket.sendall(m)
-      print len(message)
-    m = message.pop() + '|END|LAST'
+    m = self.encrypt('clientPublicKey', message.pop())
+    m = m + '|END|LAST'
     self.socket.sendall(m)
     return

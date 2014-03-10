@@ -202,6 +202,7 @@ class Detection(threading.Thread):
       result = s.receive()
       self.processResult(result)
     except Exception, e:
+      #traceback.print_exc()
       print "[!] No job on Detection queue %s" % (e)
     return
 
