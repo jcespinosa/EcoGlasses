@@ -22,6 +22,11 @@ import zlib
 from sys import argv, getsizeof
 
 
+# ==========================================================================
+# Socket
+#
+#
+# ==========================================================================
 class Socket(threading.Thread):
   def __init__(self, host='localhost', port=9999):
     threading.Thread.__init__(self)
@@ -66,6 +71,11 @@ class Socket(threading.Thread):
     return
 
 
+# ==========================================================================
+# ServerSocket
+#
+#
+# ==========================================================================
 class ServerSocket(Socket):
   def __init__(self, host='localhost', port=9999):
     Socket.__init__(self, host, port)
@@ -128,6 +138,11 @@ class ServerSocket(Socket):
     return
 
 
+# ==========================================================================
+# ClientSocket
+#
+#
+# ==========================================================================
 class ClientSocket(Socket):
   def __init__(self, host="localhost", port=9999):
     Socket.__init__(self, host, port)
