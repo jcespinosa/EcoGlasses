@@ -18,8 +18,10 @@ def writefile(filename, string):
   f.close()
     
 def main():
-  privateKeyFilename = argv[1]
-  publicKeyFilename = argv[2]
+  filename = argv[1]
+
+  privateKeyFilename = filename + 'PrivateKey'
+  publicKeyFilename = filename + 'PublicKey'
 
   privatekey, publickey = generate_RSA()
 

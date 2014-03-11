@@ -32,26 +32,30 @@ class Socket(threading.Thread):
   def encrypt(self, publicKey, message):
     from Crypto.PublicKey import RSA
     from Crypto.Cipher import PKCS1_OAEP
+    from base64 import b64encode
     key = open(publicKey, 'r').read()
     rsakey = RSA.importKey(key)
     rsakey = PKCS1_OAEP.new(rsakey)
     compressed = zlib.compress(message)
     encrypted = rsakey.encrypt(message)
-    eMessage = encrypted.encode('base64')
-    return eMessage
+    encoded = b64encode(encrypted)
+    print encoded
+    return encoded
 
   def decrypt(self, privateKey, message):
+    print message
     from Crypto.PublicKey import RSA 
     from Crypto.Cipher import PKCS1_OAEP 
     from base64 import b64decode 
     key = open(privateKey, 'r').read() 
     rsakey = RSA.importKey(key) 
-    rsakey = PKCS1_OAEP.new(rsakey) 
-    dMessage = rsakey.decrypt(b64decode(message))
-    dMessage = zlib.decompress(dMessage) 
-    return dMessage
+    rsakey = PKCS1_OAEP.new(rsakey)
+    decoded = b64decode(message)
+    decrypted = rsakey.decrypt(decoded)
+    decompressed = zlib.compress(message) 
+    return decompressed
 
-  def segmentation(self, message, size=200):
+  def split(self, message, size=100):
     cMessage = [message[i:i+size] for i in range(0, len(message), size)]
     cMessage.reverse()
     return cMessage
@@ -92,26 +96,29 @@ class ServerSocket(Socket):
     print '[>] Waiting for client request ...'
     
     data, chunk = '', ''
-    while('|LAST' not in data):
-      while('|END' not in chunk):
-        chunk += self.client.recv(512)
-      chunk = chunk.replace('|END', '')
-      data += self.decrypt('clientPrivateKey', chunk)
+    while('|LAST|' not in data):
+      while('|END|' not in chunk):
+        chunk += self.client.recv(100)
+      chunk = chunk.replace('|END|', '')
+      #chunk = self.decrypt('clientPrivateKey', chunk)
+      data += chunk
       chunk = ''
-    data = data.replace('|LAST', '')
+    data = data.replace('|LAST|', '')
 
     print "[O] Received %d bytes from client" % (getsizeof(data))
     return data
 
   def send(self, message):
     print "[>] Sending message to client (%d bytes) ..." % (getsizeof(message))
-    message = self.compress(message)
+    message = self.split(message)
     while(len(message) > 1):
-      m = self.encrypt('serverPublicKey', message.pop())
-      m = m + '|END'
+      m = message.pop()
+      #m = self.encrypt('serverPublicKey', m)
+      m = m + '|END|'
       self.client.sendall(m)
-    m = self.encrypt('serverPublicKey', message.pop())
-    m = m + '|END|LAST'
+    m = message.pop()
+    #m = self.encrypt('serverPublicKey', m)
+    m = m + '|END||LAST|'
     self.client.sendall(m)
     return
 
@@ -144,25 +151,28 @@ class ClientSocket(Socket):
     print '[>] Waiting for server response ...'
 
     data, chunk = '', ''
-    while('|LAST' not in data):
-      while('|END' not in chunk):
-        chunk += self.socket.recv(512)
-      chunk = chunk.replace('|END', '')
-      data += self.decrypt('serverPrivateKey', chunk)
+    while('|LAST|' not in data):
+      while('|END|' not in chunk):
+        chunk += self.socket.recv(100)
+      chunk = chunk.replace('|END|', '')
+      #chunk = self.decrypt('serverPrivateKey', chunk)
+      data += chunk
       chunk = ''
-    data = data.replace('|LAST', '')
+    data = data.replace('|LAST|', '')
 
     print "[O] Received %d bytes from server" % (getsizeof(data))
     return data
 
   def send(self, message):
     print "[>] Sending message to server (%d bytes) ..." % (getsizeof(message))
-    message = self.segmentation(message)
+    message = self.split(message)
     while(len(message) > 1):
-      m = self.encrypt('clientPublicKey', message.pop())
-      m = m + '|END'
+      m = message.pop()
+      #m = self.encrypt('clientPublicKey', m)
+      m = m + '|END|'
       self.socket.sendall(m)
-    m = self.encrypt('clientPublicKey', message.pop())
-    m = m + '|END|LAST'
+    m = message.pop()
+    #m = self.encrypt('clientPublicKey', m)
+    m = m + '|END||LAST|'
     self.socket.sendall(m)
     return
