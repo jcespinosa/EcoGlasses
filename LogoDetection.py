@@ -186,10 +186,12 @@ def detect(frames, method):
       res = runSVM(frames['temp'], frames['final'], LOGOS)
     elif(method == 'knn'):
       res = runKNN(frames['temp'], frames['final'], LOGOS)
-    else:
+    elif(method == 'template'):
       res = runTemplateMatcher(frames['gray'], frames['final'], LOGOS)
+    else:
+      frames['final'], res = frames['hsv'], False
   else:
-    frames['final'] = frames['hsv']
+    frames['final'], res = frames['hsv'], False
   res = processResult(res)
   return frames, res
 

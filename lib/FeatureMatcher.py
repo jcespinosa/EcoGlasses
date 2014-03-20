@@ -30,6 +30,14 @@ try:
 except:
   matcher = None
 
+# ======================================================================
+# BRUTE FORCE MATCHER
+# ======================================================================
+#try:
+#  matcher = cv.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+#except:
+#  matcher = None
+
 
 # ======================================================================
 # exploreMatch

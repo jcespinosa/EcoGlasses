@@ -19,6 +19,9 @@ import socket
 import threading
 import zlib
 
+from base64 import b64decode, b64encode
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 from sys import argv, getsizeof
 
 
@@ -34,36 +37,72 @@ class Socket(threading.Thread):
     self.port = port
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-  def encrypt(self, publicKey, message):
-    from Crypto.PublicKey import RSA
-    from Crypto.Cipher import PKCS1_OAEP
-    from base64 import b64encode
-    key = open(publicKey, 'r').read()
-    rsakey = RSA.importKey(key)
-    rsakey = PKCS1_OAEP.new(rsakey)
-    compressed = zlib.compress(message)
-    encrypted = rsakey.encrypt(message)
-    encoded = b64encode(encrypted)
-    print encoded
+  def encode(self, message):
+    encoded = b64encode(message)
     return encoded
 
-  def decrypt(self, privateKey, message):
-    print message
-    from Crypto.PublicKey import RSA 
-    from Crypto.Cipher import PKCS1_OAEP 
-    from base64 import b64decode 
-    key = open(privateKey, 'r').read() 
-    rsakey = RSA.importKey(key) 
-    rsakey = PKCS1_OAEP.new(rsakey)
+  def decode(self, message):
     decoded = b64decode(message)
-    decrypted = rsakey.decrypt(decoded)
-    decompressed = zlib.compress(message) 
+    return decoded
+
+  def compress(self, message):
+    compressed = zlib.compress(message)
+    return compressed
+
+  def decompress(self, message):
+    decompressed = zlib.decompress(message)
     return decompressed
 
+  def encrypt(self, message):
+    key = open(self.publicKey, 'r').read()
+    rsakey = RSA.importKey(key)
+    rsakey = PKCS1_OAEP.new(rsakey)
+    encrypted = rsakey.encrypt(message)
+    return encrypted
+
+  def decrypt(self, message):
+    key = open(self.privateKey, 'r').read() 
+    rsakey = RSA.importKey(key) 
+    rsakey = PKCS1_OAEP.new(rsakey)
+    decrypted = rsakey.decrypt(message)
+    return decrypted
+
   def split(self, message, size=100):
-    cMessage = [message[i:i+size] for i in range(0, len(message), size)]
-    cMessage.reverse()
-    return cMessage
+    message = self.encode(message)
+    message = self.compress(message)
+    sMessage = [message[i:i+size] for i in xrange(0, len(message), size)]
+    #sMessage = [self.encrypt(m) for m in sMessage]
+    sMessage = [m+'|END|' for m in sMessage]
+    sMessage[-1] += '|LAST|'
+    return sMessage
+
+  def join(self, message):
+    jMessage = [m.replace('|END|', '') for m in message]
+    jMessage[-1] = jMessage[-1].replace('|LAST|', '')
+    #jMessage = [self.decrypt(m) for m in jMessage]
+    jMessage = "".join(jMessage)
+    jMessage = self.decompress(jMessage)
+    jMessage = self.decode(jMessage)
+    return jMessage
+
+  def sSend(self, m, sender, message):
+    print "[>] Sending message to %s (%d bytes) ..." % (m, getsizeof(message))
+    message = self.split(message)
+    for m in message:
+      sender.sendall(m)
+    return
+
+  def sReceive(self, m, receiver):
+    print '[>] Waiting for %s ...' % (m)
+    data, chunk = list(), ''
+    while('|LAST|' not in chunk):
+      chunk = ''
+      while('|END|' not in chunk):
+        chunk += receiver.recv(100)
+      data.append(chunk)
+    data = self.join(data)
+    print "[O] Received %d bytes from %s" % (getsizeof(data), m)
+    return data
 
   def close(self):
     print '[O] Connection terminated'
@@ -79,6 +118,8 @@ class Socket(threading.Thread):
 class ServerSocket(Socket):
   def __init__(self, host='localhost', port=9999):
     Socket.__init__(self, host, port)
+    self.publicKey = 'serverPublicKey'
+    self.privateKey = 'clientPrivateKey'
 
   def bind(self):
     print '[!] Opening a new socket:'
@@ -103,37 +144,14 @@ class ServerSocket(Socket):
     return
 
   def receive(self):
-    print '[>] Waiting for client request ...'
-    
-    data, chunk = '', ''
-    while('|LAST|' not in data):
-      while('|END|' not in chunk):
-        chunk += self.client.recv(100)
-      chunk = chunk.replace('|END|', '')
-      #chunk = self.decrypt('clientPrivateKey', chunk)
-      data += chunk
-      chunk = ''
-    data = data.replace('|LAST|', '')
-
-    print "[O] Received %d bytes from client" % (getsizeof(data))
+    data = self.sReceive('client', self.client)
     return data
 
   def send(self, message):
-    print "[>] Sending message to client (%d bytes) ..." % (getsizeof(message))
-    message = self.split(message)
-    while(len(message) > 1):
-      m = message.pop()
-      #m = self.encrypt('serverPublicKey', m)
-      m = m + '|END|'
-      self.client.sendall(m)
-    m = message.pop()
-    #m = self.encrypt('serverPublicKey', m)
-    m = m + '|END||LAST|'
-    self.client.sendall(m)
+    self.sSend('client', self.client, message)
     return
 
   def closeClient(self):
-    #self.client.shutdown()
     self.client.close()
     return
 
@@ -146,6 +164,8 @@ class ServerSocket(Socket):
 class ClientSocket(Socket):
   def __init__(self, host="localhost", port=9999):
     Socket.__init__(self, host, port)
+    self.publicKey = 'clientPublicKey'
+    self.privateKey = 'serverPrivateKey'
 
   def connect(self):
     print '[!] Attempting to connect to:'
@@ -163,31 +183,9 @@ class ClientSocket(Socket):
       return
 
   def receive(self):
-    print '[>] Waiting for server response ...'
-
-    data, chunk = '', ''
-    while('|LAST|' not in data):
-      while('|END|' not in chunk):
-        chunk += self.socket.recv(100)
-      chunk = chunk.replace('|END|', '')
-      #chunk = self.decrypt('serverPrivateKey', chunk)
-      data += chunk
-      chunk = ''
-    data = data.replace('|LAST|', '')
-
-    print "[O] Received %d bytes from server" % (getsizeof(data))
+    data = self.sReceive('server', self.socket)
     return data
 
   def send(self, message):
-    print "[>] Sending message to server (%d bytes) ..." % (getsizeof(message))
-    message = self.split(message)
-    while(len(message) > 1):
-      m = message.pop()
-      #m = self.encrypt('clientPublicKey', m)
-      m = m + '|END|'
-      self.socket.sendall(m)
-    m = message.pop()
-    #m = self.encrypt('clientPublicKey', m)
-    m = m + '|END||LAST|'
-    self.socket.sendall(m)
+    self.sSend('server', self.socket, message)
     return
