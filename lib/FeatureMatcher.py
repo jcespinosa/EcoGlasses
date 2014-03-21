@@ -22,21 +22,23 @@ import numpy as np
 # ======================================================================
 # FLANN BASED MATCHER
 # ======================================================================
-try:
-  FLANN_INDEX_KDTREE = 1
-  flann_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-  search_params = dict(checks=50) 
-  matcher = cv.FlannBasedMatcher(flann_params, search_params)
-except:
-  matcher = None
+#try:
+#  FLANN_INDEX_KDTREE = 1
+#  flann_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+#  search_params = dict(checks=50) 
+#  matcher = cv.FlannBasedMatcher(flann_params, search_params)
+#except Exception, e:
+#  print e
+#  matcher = None
 
 # ======================================================================
 # BRUTE FORCE MATCHER
 # ======================================================================
-#try:
-#  matcher = cv.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-#except:
-#  matcher = None
+try:
+  matcher = cv.BFMatcher(cv.NORM_HAMMING, crossCheck=True)
+except Exception, e:
+  print e
+  matcher = None
 
 
 # ======================================================================
@@ -98,7 +100,7 @@ def filterMatches(kp1, kp2, matches, ratio=0.60):
 # TODO
 #
 # ======================================================================
-def run(temp, image, LOGOS):
+def runFLANN(temp, image, LOGOS):
   for name, logo in LOGOS.iteritems():
     for template in logo:
       desc1, desc2 = template['descriptors'], temp['descriptors']
@@ -121,4 +123,42 @@ def run(temp, image, LOGOS):
         print 'Matches > %d' % (matches)
         return (True, matches, name)
 
+  return False
+
+# ======================================================================
+# run
+#
+# TODO
+#
+# ======================================================================
+def run(temp, image, LOGOS):
+  global matcher
+
+  for name, logo in LOGOS.iteritems():
+    for template in logo:
+      desc1, desc2 = template['descriptors'], temp['descriptors']
+      kp1, kp2 = template['keypoints'], temp['keypoints']
+
+      matches = matcher.match(desc1, desc2)
+
+      # Sort them in the order of their distance.
+      matches = sorted(matches, key = lambda x:x.distance)
+
+      # Get the distances
+      distances = [m.distance for m in matches]
+
+      # Threshold to select only the reasonable matches
+      threshold = (sum(distances) / len(distances)) * 0.5
+
+      # Select the matches
+      selectedMatches = [m for m in matches if m.distance < threshold]
+
+      for m in selectedMatches:
+        point = (kp2[m.queryIdx].pt[0], kp2[m.queryIdx].pt[1])
+        cv.circle(image, point, 3, (255, 0, 0), -1)
+
+      if(len(selectedMatches) >= 3):
+        print 'Matches > %d' % (len(selectedMatches))
+        return (True, selectedMatches, name)
+      #print matches
   return False
