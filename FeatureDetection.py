@@ -15,12 +15,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>. #
 ########################################################################
 
-from sys import argv
+import cPickle as pickle
 import cv2 as cv
 import numpy as np
-import cPickle as pickle
 import os
 
+from sys import argv
 
 # ======================================================================
 # FeatureDetection
@@ -36,15 +36,16 @@ import os
 
 # PATHS to save the corresponding data, 
 PATHS = {
-  "keypoints": "./keypoints/",
-  "descriptors": "./descriptors/",
-  "arrays": "./arrays/",
-  "logos": "./logos/"
+  'keypoints': './keypoints/',
+  'descriptors': './descriptors/',
+  'arrays': './arrays/',
+  'logos': './logos/'
 }
 
-#hessian_threshold = 5000
+# Posible logos to be detected
+LOGO_NAMES = ['kellogs', 'lala', 'quaker']
 
-# ==========================================================================
+# ======================================================================
 # FeatureDetector
 #
 # Gets an image
@@ -53,7 +54,7 @@ PATHS = {
 # Process the image and uses the SURF method to get the keypoints and 
 # descriptors
 #
-# ==========================================================================
+# ======================================================================
 def FeatureDetector(cvImage=None, filename=None):
   template = dict()
 
@@ -65,16 +66,88 @@ def FeatureDetector(cvImage=None, filename=None):
 
   imageGray = cv.cvtColor(inputImage, cv.COLOR_BGR2GRAY)
 
-  #detector = cv.SURF(hessian_threshold)
+  #detector = cv.SURF(5000)
   #detector = cv.SIFT()
   detector = cv.ORB()
   keypoints, descriptors = detector.detectAndCompute(imageGray, None, useProvidedKeypoints=False)
 
-  template["image"] = inputImage
-  template["array"] = imageGray
-  template["keypoints"] = keypoints
-  template["descriptors"] = descriptors
+  template['image'] = inputImage
+  template['array'] = imageGray
+  template['keypoints'] = keypoints
+  template['descriptors'] = descriptors
   return template
+
+
+# ======================================================================
+# loadFeatures
+#
+# TODO
+#
+# ======================================================================
+def loadFeatures():
+  global LOGO_NAMES
+
+  LOGOS = dict()
+
+  for name in LOGO_NAMES:
+    LOGOS[name] = list()
+    count = 1
+    while(True):
+      path = '%s/%d'%(name, count)
+
+      a, keypoints = loadKeypoints(PATHS['keypoints'] + path + '.kp')
+      
+      if(not keypoints):
+        print "[!] Template for '%s' not found, the sequence is broken, end reached." % (path)
+        break
+
+      descriptors = np.load(PATHS['descriptors'] + path + '.npy')
+      array = np.load(PATHS['arrays'] + path + '.npy')
+
+      template = {
+        'keypoints': keypoints,
+        'descriptors': descriptors,
+        'array': array
+      }
+
+      print '[O] Loaded template for %s.' % (path)
+      LOGOS[name].append(template)
+      count += 1
+  return LOGOS
+
+
+# ======================================================================
+# loadTemplates
+#
+# TODO
+#
+# ======================================================================
+def loadTemplates():
+  global LOGO_NAMES
+
+  LOGOS = dict()
+
+  for name in LOGO_NAMES:
+    LOGOS[name] = list()
+    count = 1
+    while(True):
+      path = '%s/%d'%(name, count)
+
+      try:
+        template = cv.imread(PATHS['logos'] + path + '.png')
+      except Exception, e:
+        print "[X] %s" % (e)
+        break
+
+      if(template == None):
+        print "[!] Template for '%s' not found, the sequence is broken, end reached." % (path)
+        break
+
+      template = cv.cvtColor(template, cv.COLOR_BGR2GRAY)
+      print '[O] Loaded template for %s.' % (path)
+      LOGOS[name].append(template)
+      count += 1
+  return LOGOS
 
 
 # ======================================================================
@@ -90,7 +163,7 @@ def saveKeypoints(filename, keypoints):
     keypoint = (point.pt, point.size, point.angle, point.response, point.octave, point.class_id)
     kArray.append(keypoint)
   
-  with open(filename, "wb") as outputFile:
+  with open(filename, 'wb') as outputFile:
     pickle.dump(kArray, outputFile)
   return
 
@@ -132,16 +205,16 @@ def loadKeypoints(filename):
 #
 # ======================================================================
 def showFeatures(filename, temp):
-  for kp in temp["keypoints"]:
+  for kp in temp['keypoints']:
     x = int(kp.pt[0])
     y = int(kp.pt[1])
-    cv.circle(temp["image"], (x, y), 3, (0, 0, 0), -1)
+    cv.circle(temp['image'], (x, y), 3, (0, 0, 0), -1)
 
-  print "[!] Press ESC to continue"
+  print '[!] Press ESC to continue.'
   while(True):
-    cv.imshow("Features on %s"%(filename), temp["image"])
+    cv.imshow("Features on %s" % (filename), temp['image'])
     c = cv.waitKey(33)
-    print 'You pressed %d (0x%x), LSB: %d (%s)' % (c, c, c % 256, repr(chr(c%256)) if c%256 < 128 else '?')
+    print "You pressed %d (0x%x), LSB: %d (%s)." % (c, c, c % 256, repr(chr(c%256)) if c%256 < 128 else '?')
     if((c % 256) == 27): #(ESC)
       cv.destroyWindow("Features on %s"%(filename))
       break
@@ -155,31 +228,31 @@ def showFeatures(filename, temp):
 #
 # ======================================================================
 def extraction(inputName, extension, show=False):
-  imagePath = PATHS["logos"] + inputName + "/"
+  imagePath = PATHS['logos'] + inputName + '/'
 
   if(os.path.exists(imagePath)):
     count = 1
     while(True):
-      filename = imagePath + str(count) + "." + extension
+      filename = imagePath + str(count) + '.' + extension
 
       if(not os.path.exists(filename)):
-        print "[!] File '%s' not found, the sequence is broken, end reached"%(filename)
+        print "[!] File '%s' not found, the sequence is broken, end reached." % (filename)
         break
 
       temp = FeatureDetector(filename = filename)
 
-      saveKeypoints(PATHS["keypoints"] + inputName + "/" + str(count) + ".kp", temp["keypoints"])
-      np.save(PATHS["descriptors"] + inputName + "/" + str(count) + ".npy", temp["descriptors"])
-      np.save(PATHS["arrays"] + inputName + "/" + str(count) + ".npy", temp["array"])
+      saveKeypoints(PATHS['keypoints'] + inputName + '/' + str(count) + '.kp', temp['keypoints'])
+      np.save(PATHS['descriptors'] + inputName + '/' + str(count) + '.npy', temp['descriptors'])
+      np.save(PATHS['arrays'] + inputName + '/' + str(count) + '.npy', temp['array'])
 
       if(show):
         showFeatures(filename, temp)
 
-      print "[O] Processed '%s'"%(filename)
+      print "[O] Processed '%s'."%(filename)
       count += 1
 
   else:
-    print "[X] Input name not found\n"
+    print '[X] Input name not found.'
   return
 
 
@@ -197,7 +270,7 @@ def createPATHS(inputName):
       os.mkdir(path)
       flag = True
 
-    p = path + "/" + inputName + "/"
+    p = path + '/' + inputName + '/'
     if(not os.path.exists(p)):
       os.mkdir(p)
       flag = True
@@ -208,25 +281,25 @@ def createPATHS(inputName):
 # main
 # ======================================================================
 def main():
-  inputName = ""
+  inputName, extension = '', ''
 
   try:
     inputName = argv[1]
   except Exception, e:
-    print "[X] Error, 1 argument expected (InputName), optional (extension [png, jpg])\n"
+    print '[X] Error, 1 argument expected (InputName), optional (extension [png, jpg]).'
     return
 
   try:
     extension = argv[2]
   except Exception, e:
-    print "[!] No extension specified, using default .png\n"
-    extension = "png"
+    print '[!] No extension specified, using default .png.'
+    extension = 'png'
 
   if(createPATHS(inputName)):
-    print "[O] Paths created\n"
+    print '[O] Paths created.'
 
   extraction(inputName, extension, show=True)
   return
 
-if(__name__ == "__main__"):
+if(__name__ == '__main__'):
   main()

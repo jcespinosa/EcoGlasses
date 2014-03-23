@@ -25,3 +25,11 @@
 .DS_Store
 .idea
 .secret
+clientPublicKey
+clientPrivateKey
+serverPublicKey
+serverPrivateKey
+fromserver.txt
+toserver.txt
+fromclient.txt
+toclient.txt

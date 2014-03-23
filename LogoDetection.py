@@ -15,36 +15,31 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>. #
 ########################################################################
 
-import cPickle as pickle
 import cv2 as cv
 import numpy as np
-import traceback
 
-from json import dumps, loads
+from json import dumps
 from PIL import Image
 from sys import argv, path
 
-from FeatureDetection import FeatureDetector, loadKeypoints, PATHS
+from FeatureDetection import FeatureDetector, loadFeatures, loadTemplates
 from MySocket import ServerSocket
 
 path.append('./lib/')
 
-from KNN import run as runKNN
-#from SVM import run as runSVM
-from TemplateMatcher import run as runTemplateMatcher
-from FeatureMatcher import run as runFeatureMatcher
+#from KNN import run as runKNN
+#from TemplateMatcher import run as runTemplateMatcher
+from FlannMatcher import run as runFlannMatcher
+from BFMatcher import run as runBFMatcher
 
 
-# Posible logos to be detected
-LOGO_NAMES = ['kellogs', 'lala', 'quaker']
 LOGOS = dict()
 
-
-# ==========================================================================
+# ======================================================================
 # Server
 #
 #
-# ==========================================================================
+# ======================================================================
 class Server():
   def __init__(self):
     self.socket = ServerSocket(port=9999)
@@ -65,7 +60,7 @@ class Server():
       dCV = np.array(dPIL)
       dCV = cv.cvtColor(dCV, cv.COLOR_RGB2BGR)
     except Exception, e:
-      print '[X] Error decoding message: %s' % (e)
+      print '[X] Error decoding message: %s.' % (e)
       dCV, dPIL = None, None
     return dCV, dPIL
 
@@ -87,78 +82,12 @@ class Server():
     return
 
 
-# ==========================================================================
-# loadFeatures
-#
-# TODO
-#
-# ==========================================================================
-def loadFeatures():
-  global LOGOS, LOGO_NAMES
-
-  for name in LOGO_NAMES:
-    LOGOS[name] = list()
-    count = 1
-    while(True):
-      path = '%s/%d'%(name, count)
-
-      a, keypoints = loadKeypoints(PATHS['keypoints'] + path + '.kp')
-      
-      if(not keypoints):
-        print "[!] Template for '%s' not found, the sequence is broken, end reached" % (path)
-        break
-
-      descriptors = np.load(PATHS['descriptors'] + path + '.npy')
-      array = np.load(PATHS['arrays'] + path + '.npy')
-
-      template = {
-        'keypoints': keypoints,
-        'descriptors': descriptors,
-        'array': array
-      }
-
-      print '[O] Loaded template for %s' % (path)
-      LOGOS[name].append(template)
-      count += 1
-  return
-
-# ==========================================================================
-# loadFeatures
-#
-# TODO
-#
-# ==========================================================================
-def loadTemplates():
-  global LOGOS, LOGO_NAMES
-
-  for name in LOGO_NAMES:
-    LOGOS[name] = list()
-    count = 1
-    while(True):
-      path = '%s/%d'%(name, count)
-
-      try:
-        template = cv.imread(PATHS['logos'] + path + '.png')
-      except Exception, e:
-        print "[X] %s" % (e)
-        break
-
-      if(template == None):
-        print "[!] Template for '%s' not found, the sequence is broken, end reached" % (path)
-        break
-
-      template = cv.cvtColor(template, cv.COLOR_BGR2GRAY)
-      print '[O] Loaded template for %s'%(path)
-      LOGOS[name].append(template)
-      count += 1
-  return
-
-# ==========================================================================
+# ======================================================================
 # processResult
 #
 # TODO
 #
-# ==========================================================================
+# ======================================================================
 def processResult(res):
   result = {
     'state': 0,
@@ -172,22 +101,24 @@ def processResult(res):
     }
   return result
 
-# ==========================================================================
+# ======================================================================
 # loadFeatures
 #
 # TODO
 #
-# ==========================================================================
+# ======================================================================
 def detect(frames, method):
   if(method):
-    if(method == 'matcher'):
-      res = runFeatureMatcher(frames['temp'], frames['final'], LOGOS)
-    elif(method == 'svm'):
-      res = runSVM(frames['temp'], frames['final'], LOGOS)
-    elif(method == 'knn'):
-      res = runKNN(frames['temp'], frames['final'], LOGOS)
-    elif(method == 'template'):
-      res = runTemplateMatcher(frames['gray'], frames['final'], LOGOS)
+    if(method == 'bf'):
+      res = runBFMatcher(frames['temp'], frames['final'], LOGOS)
+    elif(method == 'flann'):
+      res = runFlannMatcher(frames['temp'], frames['final'], LOGOS)
+    #elif(method == 'svm'):
+    #  res = runSVM(frames['temp'], frames['final'], LOGOS)
+    #elif(method == 'knn'):
+    #  res = runKNN(frames['temp'], frames['final'], LOGOS)
+    #elif(method == 'template'):
+    #  res = runTemplateMatcher(frames['gray'], frames['final'], LOGOS)
     else:
       frames['final'], res = frames['hsv'], False
   else:
@@ -195,12 +126,12 @@ def detect(frames, method):
   res = processResult(res)
   return frames, res
 
-# ==========================================================================
+# ======================================================================
 # preprocessFrame
 #
 # TODO
 #
-# ==========================================================================
+# ======================================================================
 def preprocessFrame(frame):
   print '[>] Preprocessing frame ...'
   frames = {'original': frame, 'final': frame}
@@ -211,47 +142,44 @@ def preprocessFrame(frame):
   print '[O] Frame is ready ...'
   return frames
 
-# ==========================================================================
+# ======================================================================
 # Main
-# ==========================================================================
+# ======================================================================
 def main():
-  detectionMethod = 'matcher'
+  detectionMethod = 'bf'
 
   try:
     detectionMethod = argv[1]
   except Exception, e:
-    print '[!] One argument expected (detectionMethod [matcher, template, svm, knn])'
-    
-  print '[!] Using detection method "%s"\n' % (detectionMethod)
+    print '[!] One argument expected (detectionMethod [bf, flann, template, svm, knn]).'
+  print "[!] Using detection method %s." % (detectionMethod)
 
+  global LOGOS
   if(detectionMethod == 'template'):
     print '[>] Loading templates ...'
-    loadTemplates()
+    LOGOS = loadTemplates()
   else:
     print '[>] Loading features ...'
-    loadFeatures()
-  print '[O] Loaded'
+    LOGOS = loadFeatures()
+  print '[O] Loaded.'
 
   s = Server()
   while(True):
     print '[>] Waiting for a frame ...'
 
     data = s.receive()
-
     if(not data):
       break
-
     dCV, dPIL = data
 
     if(dCV is not None):
       frames = preprocessFrame(dCV)
-      frames, result = detect(frames, detectionMethod)
+      #frames, result = detect(frames, detectionMethod)
       cv.imshow('from socket', frames['final'])
       if(cv.waitKey(1) == 23):
         break
     else:
       result = processResult(False)
-    print result
     s.send(result)
 
   s.close()

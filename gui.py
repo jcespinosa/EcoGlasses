@@ -23,19 +23,19 @@ import Queue
 
 from MySocket import ClientSocket
 
-from json import dumps, loads
+from json import loads
 from time import sleep
 from Tkinter import *
 from PIL import Image, ImageTk
 
 
-# ==========================================================================
+# ======================================================================
 # App Class
 #
 # Builds and draws all the GUI
 # Load each processed frame
 #
-# ==========================================================================
+# ======================================================================
 class App(Frame):
   def __init__(self, parent):
     Frame.__init__(self, parent)
@@ -50,7 +50,7 @@ class App(Frame):
     return
 
   def onClose(self):
-    print '[O] Terminating App thread, destroying GUI'
+    print '[!] Terminating App thread, destroying GUI.'
     detect.stop = True
     capture.stop = True
     self.parent.destroy()
@@ -76,7 +76,7 @@ class App(Frame):
     self.outline = 'black'
     self.message = 'Waiting ...'
 
-    print '[O] UI ready'
+    print '[O] UI ready.'
     return
 
   def updateWidgets(self):
@@ -90,7 +90,7 @@ class App(Frame):
     w, h = self.windowSize['width'], self.windowSize['height']
     try:
       self.frame = ImageTk.PhotoImage(frame)
-      self.videoCanvas.delete("all")
+      self.videoCanvas.delete('all')
       self.videoCanvas.configure(width=w, height=h)
       self.videoCanvas.create_image(w/2, h/2, image=self.frame)
     except Exception, e:
@@ -111,21 +111,19 @@ class App(Frame):
     return
 
   def processQueue(self):
-    try:
+    if(self.queue.qsize() > 0):
       task = self.queue.get(0)
-    except Exception, e:
-      print "[!] No job on App queue %s" % (e)
-      task = {'task': 100}
-    self.processTask(task)
-    self.parent.after(45, self.processQueue)
+      self.processTask(task)
+    #print self.queue.qsize()
+    self.parent.after(50, self.processQueue)
     return
 
 
-# ==========================================================================
+# ======================================================================
 # Client
 #
 #
-# ==========================================================================
+# ======================================================================
 class Client():
   def __init__(self):
     self.socket = ClientSocket()
@@ -140,7 +138,7 @@ class Client():
       message = loads(message)
     except Exception, e:
       message = False
-      print "[X] Error decoding the message from the server %s" % (e)
+      print "[X] Error decoding the message from the server %s." % (e)
     return message
 
   def send(self, message):
@@ -162,21 +160,21 @@ class Client():
     return
 
 
-# ==========================================================================
+# ======================================================================
 # Detection
 #
 #
-# ==========================================================================
+# ======================================================================
 class Detection(threading.Thread):
   def __init__(self):
     threading.Thread.__init__(self)
-    self.queue = Queue.Queue()
+    self.frame = None
     self.state = None
     self.stop = False
 
-  def enqueue(self, frame):
+  def setFrame(self, frame):
     if(self.state == 'idle'):
-      self.queue.put(frame)
+      self.frame = frame
       self.state = 'busy'
     return
 
@@ -195,40 +193,35 @@ class Detection(threading.Thread):
     self.state = 'idle'
     return
 
-  def processQueue(self, s):
-    try:
+  def sendFrame(self, s):
+    if(self.frame is not None):
       print '[>] Sending frame to detection server ...'
-      s.send(self.queue.get(0))
+      s.send(self.frame)
+      self.frame = None
       result = s.receive()
       self.processResult(result)
-    except Exception, e:
-      #traceback.print_exc()
-      print "[!] No job on Detection queue %s" % (e)
     return
 
   def run(self):
     self.state = 'idle'
 
     s = Client()
-    while(True):
-      self.processQueue(s)
+    while(not self.stop):
+      self.sendFrame(s)
       sleep(1.0)
-      if(self.stop):
-        break
     s.close()
 
-    print '[!] Terminating Detection thread'
+    print '[!] Terminating Detection thread.'
     return
 
 
-# ==========================================================================
+# ======================================================================
 # Capture Class
 #
-# Prepares the different ways to get the input data 
 # Reads a frame from webcam
 # Convert the frames from OpenCV to PIL images
 # 
-# ==========================================================================
+# ======================================================================
 class Capture(threading.Thread):
   def __init__(self):
     threading.Thread.__init__(self)
@@ -260,38 +253,36 @@ class Capture(threading.Thread):
     return
 
   def run(self):
-    self.capture = cv.VideoCapture(0) # Uncomment to capture from webcam
+    self.capture = cv.VideoCapture(0)
 
-    while True:
+    while(not self.stop):
       self.getFrame()
       if(self.frame):
-        detect.enqueue(self.roi)
+        detect.setFrame(self.roi)
         app.queue.put({'task': 0, 'frame': self.frame})
         sleep(0.1)
-      if(self.stop):
-        break
 
-    print '[!] Terminating Capture thread'
+    print '[!] Terminating Capture thread.'
     return
 
 
-# ==========================================================================
+# ======================================================================
 # cv2pil
 #
 # Convert the frames from OpenCV to PIL images
 # 
-# ==========================================================================
+# ======================================================================
 def cv2pil(frame):
   h, w, d = frame.shape
-  f = Image.fromstring('RGB', (w,h), frame.tostring(), 'raw','BGR')
+  f = Image.fromstring('RGB', (w,h), frame.tostring(), 'raw', 'BGR')
   return f
 
-# ==========================================================================
+# ======================================================================
 # calculateROI
 #
 # TODO
 #
-# ==========================================================================
+# ======================================================================
 def calculateROI(im):
   fh, fw, fd = im.shape if(isinstance(im, np.ndarray)) else im
   bh, bw = (350, 350)
@@ -299,20 +290,20 @@ def calculateROI(im):
   y = (fh - bh)/2
   return x, y, bh, bw
 
-# ==========================================================================
+# ======================================================================
 # getROI
 #
 # TODO
 #
-# ==========================================================================
+# ======================================================================
 def getROI(im):
   x, y, bh, bw = calculateROI(im)
   roi = im[y:y+bh, x:x+bw]
   return roi
 
-# ==========================================================================
+# ======================================================================
 # Main
-# ==========================================================================
+# ======================================================================
 if(__name__ == '__main__'):
   root = Tk()
   app = App(root)
