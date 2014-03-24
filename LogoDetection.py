@@ -179,7 +179,9 @@ def main():
       if(cv.waitKey(1) == 23):
         break
     else:
-      result = processResult(False)
+      pass
+    result = False
+    result = processResult(result)
     s.send(result)
 
   s.close()
