@@ -69,9 +69,17 @@ class App(Frame):
     self.filemenu.add_command(label='Close', command=self.parent.quit)
     self.menubar.add_cascade(label='Menu 1', menu=self.filemenu)
 
-    self.canvasContainer = Frame(self.parent).grid(row=0, column=0)
+    self.canvasFrame = Frame(self.parent)#.grid(row=0, column=0)
+    self.canvasContainer = LabelFrame(self.canvasFrame, text="Capture", width=self.windowSize['width'], height=self.windowSize['height'])
     self.videoCanvas = Canvas(self.canvasContainer, width=self.windowSize['width'], height=self.windowSize['height'])
-    self.videoCanvas.pack(side=LEFT, padx=5,pady=5)
+    self.videoCanvas.pack()
+    self.canvasFrame.pack(side=LEFT)
+    self.canvasContainer.pack(expand="yes", padx=5, pady=5)
+
+    self.infoFrame = Frame(self.parent)#.grid(row=0, column=1)
+    self.infoContainer = LabelFrame(self.infoFrame, text="Product information", padx=5, pady=5, width=self.windowSize['width']/2, height=self.windowSize['height'])#Frame(self.parent).grid(row=0, column=0)
+    self.infoFrame.pack(side=LEFT)
+    self.infoContainer.pack(expand="yes", padx=5, pady=5)
 
     self.outline = 'black'
     self.message = 'Waiting ...'
@@ -308,7 +316,7 @@ if(__name__ == '__main__'):
   root = Tk()
   app = App(root)
   detect = Detection()
-  detect.start()
+  #detect.start()
   capture = Capture()
   capture.start()
   root.mainloop()
