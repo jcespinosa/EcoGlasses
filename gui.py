@@ -77,9 +77,11 @@ class App(Frame):
     self.canvasContainer.pack(expand="yes", padx=5, pady=5)
 
     self.infoFrame = Frame(self.parent)#.grid(row=0, column=1)
-    self.infoContainer = LabelFrame(self.infoFrame, text="Product information", padx=5, pady=5, width=self.windowSize['width']/2, height=self.windowSize['height'])#Frame(self.parent).grid(row=0, column=0)
+    self.infoContainer = LabelFrame(self.infoFrame, text="Product information", padx=5, pady=5, width=self.windowSize['width']/2, height=self.windowSize['height'])
+    self.resetButton = Button(self.infoFrame, text="Reset detection", command=detect.reset)
     self.infoFrame.pack(side=LEFT)
     self.infoContainer.pack(expand="yes", padx=5, pady=5)
+    self.resetButton.pack()
 
     self.outline = 'black'
     self.message = 'Waiting ...'
@@ -180,6 +182,11 @@ class Detection(threading.Thread):
     self.state = None
     self.stop = False
 
+  def reset(self):
+    self.state = 'idle'
+    print "Reset"
+    return
+
   def setFrame(self, frame):
     if(self.state == 'idle'):
       self.frame = frame
@@ -198,7 +205,6 @@ class Detection(threading.Thread):
       else:
         app.queue.put({'task': 1, 'color': 'red'})
         app.queue.put({'task': 2, 'message': 'Error!'})
-    self.state = 'idle'
     return
 
   def sendFrame(self, s):
@@ -314,9 +320,9 @@ def getROI(im):
 # ======================================================================
 if(__name__ == '__main__'):
   root = Tk()
-  app = App(root)
   detect = Detection()
   #detect.start()
+  app = App(root)
   capture = Capture()
   capture.start()
   root.mainloop()
