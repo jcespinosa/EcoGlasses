@@ -199,12 +199,14 @@ class Detection(threading.Thread):
       if(state == 0):
         app.queue.put({'task': 1, 'color': 'black'})
         app.queue.put({'task': 2, 'message': 'Nothing detected'})
+        self.reset()
       elif(state == 1):
         app.queue.put({'task': 1, 'color': 'green'})
         app.queue.put({'task': 2, 'message': res['message']})
       else:
         app.queue.put({'task': 1, 'color': 'red'})
         app.queue.put({'task': 2, 'message': 'Error!'})
+        self.reset()
     return
 
   def sendFrame(self, s):
@@ -222,7 +224,7 @@ class Detection(threading.Thread):
     s = Client()
     while(not self.stop):
       self.sendFrame(s)
-      sleep(1.0)
+      sleep(2.0)
     s.close()
 
     print '[!] Terminating Detection thread.'
@@ -321,7 +323,7 @@ def getROI(im):
 if(__name__ == '__main__'):
   root = Tk()
   detect = Detection()
-  #detect.start()
+  detect.start()
   app = App(root)
   capture = Capture()
   capture.start()

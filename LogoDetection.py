@@ -174,14 +174,12 @@ def main():
 
     if(dCV is not None):
       frames = preprocessFrame(dCV)
-      #frames, result = detect(frames, detectionMethod)
+      frames, result = detect(frames, detectionMethod)
       cv.imshow('from socket', frames['final'])
       if(cv.waitKey(1) == 23):
         break
     else:
-      pass
-    result = False
-    result = processResult(result)
+      result = processResult(False)
     s.send(result)
 
   s.close()
