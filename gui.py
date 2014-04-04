@@ -78,13 +78,18 @@ class App(Frame):
 
     self.infoFrame = Frame(self.parent)#.grid(row=0, column=1)
     self.infoContainer = LabelFrame(self.infoFrame, text="Product information", padx=5, pady=5, width=self.windowSize['width']/2, height=self.windowSize['height'])
+    self.infoText = Text(self.infoContainer, width=50, height=29, background='white')
     self.resetButton = Button(self.infoFrame, text="Reset detection", command=detect.reset)
     self.infoFrame.pack(side=LEFT)
     self.infoContainer.pack(expand="yes", padx=5, pady=5)
+    self.infoText.pack()
     self.resetButton.pack()
 
     self.outline = 'black'
     self.message = 'Waiting ...'
+    self.text = 'Waiting for server data'
+
+    self.infoText.insert(INSERT, self.text)
 
     print '[O] UI ready.'
     return
@@ -94,6 +99,8 @@ class App(Frame):
     x2, y2 = x1 + w, y1 + h
     self.videoCanvas.create_rectangle(x1, y1, x2, y2, width=3.0, dash=(4,8), outline=self.outline)
     self.videoCanvas.create_text(320, 430, fill=self.outline, text=self.message)
+    self.infoText.delete('1.0', END)
+    self.infoText.insert(INSERT, self.text)
     return
 
   def loadFrame(self, frame):
@@ -115,6 +122,7 @@ class App(Frame):
       self.outline = task['color']
     elif(t == 2):
       self.message = task['message']
+      self.text = task['message']
     else:
       pass
     self.updateWidgets()
