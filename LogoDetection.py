@@ -107,19 +107,22 @@ def processResult(res):
 # TODO
 #
 # ======================================================================
+METHODS = {
+  'bf': runBFMatcher,
+  'flann': runFlannMatcher
+}
+#  'knn': runKNN,
+#  'svm': runSVM,
+#  'template': runTemplateMatcher
+#}
+
 def detect(frames, method):
   if(method):
-    if(method == 'bf'):
-      res = runBFMatcher(frames['temp'], frames['final'], LOGOS)
-    elif(method == 'flann'):
-      res = runFlannMatcher(frames['temp'], frames['final'], LOGOS)
-    #elif(method == 'svm'):
-    #  res = runSVM(frames['temp'], frames['final'], LOGOS)
-    #elif(method == 'knn'):
-    #  res = runKNN(frames['temp'], frames['final'], LOGOS)
-    #elif(method == 'template'):
-    #  res = runTemplateMatcher(frames['gray'], frames['final'], LOGOS)
-    else:
+    frame = frames['temp'] if(method != 'template') else frames['gray']
+    try:
+      res = METHODS[method](frame, frames['final'], LOGOS)
+    except Exception, e:
+      print '[X] Error calling detection method: %s' % (e)
       frames['final'], res = frames['hsv'], False
   else:
     frames['final'], res = frames['hsv'], False
