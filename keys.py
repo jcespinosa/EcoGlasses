@@ -18,15 +18,13 @@ def writefile(filename, string):
   return
     
 def main():
-  filename = argv[1]
+  clientPrivateKey, clientPublicKey = generate_RSA()
+  serverPrivateKey, serverPublicKey = generate_RSA()
 
-  privateKeyFilename = filename + 'PrivateKey'
-  publicKeyFilename = filename + 'PublicKey'
-
-  privatekey, publickey = generate_RSA()
-
-  writefile(privateKeyFilename, privatekey)
-  writefile(publicKeyFilename, publickey)
+  writefile('clientPrivateKey', clientPrivateKey)
+  writefile('clientPublicKey', clientPublicKey)
+  writefile('serverPrivateKey', serverPrivateKey)
+  writefile('serverPublicKey', serverPublicKey)
 
 if(__name__=='__main__'):
   main()

@@ -22,7 +22,7 @@ from json import dumps
 from PIL import Image
 from sys import argv, path
 
-from FeatureDetection import FeatureDetector, loadFeatures, loadTemplates
+from FeatureExtraction import FeatureExtractor, loadFeatures, loadTemplates
 from MySocket import ServerSocket
 
 path.append('./lib/')
@@ -141,7 +141,7 @@ def preprocessFrame(frame):
   frames['gray'] = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
   #frames['blur'] = smooth(frame, mat=(15,15))
   frames['hsv'] = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-  frames['temp'] = FeatureDetector(cvImage=frame)
+  frames['temp'] = FeatureExtractor(cvImage=frame)
   print '[O] Frame is ready ...'
   return frames
 

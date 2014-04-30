@@ -24,7 +24,7 @@ from sys import argv
 
 
 # ======================================================================
-# FeatureDetection
+# FeatureExtraction
 #
 # Gets an external filename
 # Uses the SURF or SIFT Feature detection method to obtain the keypoints
@@ -47,7 +47,7 @@ PATHS = {
 LOGO_NAMES = ['kellogs', 'lala', 'quaker']
 
 # ======================================================================
-# FeatureDetector
+# FeatureExtractor
 #
 # Gets an image
 # If the parameter is a filename, sets the path to the filename and reads it
@@ -56,7 +56,7 @@ LOGO_NAMES = ['kellogs', 'lala', 'quaker']
 # descriptors
 #
 # ======================================================================
-def FeatureDetector(cvImage=None, filename=None):
+def FeatureExtractor(cvImage=None, filename=None):
   template = dict()
 
   if(filename is not None):
@@ -240,7 +240,7 @@ def extraction(inputName, extension, show=False):
         print "[!] File '%s' not found, the sequence is broken, end reached." % (filename)
         break
 
-      temp = FeatureDetector(filename = filename)
+      temp = FeatureExtractor(filename = filename)
 
       saveKeypoints(PATHS['keypoints'] + inputName + '/' + str(count) + '.kp', temp['keypoints'])
       np.save(PATHS['descriptors'] + inputName + '/' + str(count) + '.npy', temp['descriptors'])
