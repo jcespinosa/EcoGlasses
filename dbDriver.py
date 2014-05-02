@@ -24,5 +24,8 @@ def connect():
 def get():
   return
 
+def foo():
+  return
+
 if(__name__ == '__main__'):
   main()
