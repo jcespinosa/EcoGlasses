@@ -18,5 +18,11 @@
 DB = 'ecoglasses'
 COLLECTION = 'logos'
 
+def connect():
+  return
+
+def get():
+  return
+
 if(__name__ == '__main__'):
   main()
