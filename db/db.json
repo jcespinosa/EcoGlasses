@@ -1,0 +1,37 @@
+[
+  {
+    "id": "lala",
+    "name": "Lala",
+    "product": "Milk",
+    "barcode": "7501020515398",
+    "madein": "Gomez Palacio, Durango, Mexico"
+  },
+  {
+    "id": "quaker",
+    "name": "Quaker Oats",
+    "product": "Oats flakes",
+    "barcode": "038527132577",
+    "madein": "Estados Unidos"
+  },
+  {
+    "id": "kellogs",
+    "name": "Kellogs",
+    "product": "Corn flakes",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "pepsi",
+    "name": "Pepsi",
+    "product": "Soda",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "nestle",
+    "name": "Nestle",
+    "product": "none",
+    "barcode": "none",
+    "madein": "none"
+  }
+]
