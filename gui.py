@@ -43,8 +43,7 @@ class App(Frame):
     self.windowSize = {'width': 640, 'height': 480}
     self.parent = parent
     self.widgets = dict()
-    self.buildUI(parent) 
-    self.parent.config(menu=self.menubar)
+    self.buildUI() 
     self.queue = Queue.Queue()
     self.processQueue()
     return
@@ -56,18 +55,19 @@ class App(Frame):
     self.parent.destroy()
     self.parent.quit()
 
-  def buildUI(self, root):
+  def buildUI(self):
     print '[>] Creating UI ...'
     self.parent.title('Logo detection')
 
-    self.menubar = Menu(root)
+    self.menubar = Menu(self.parent)
     self.filemenu = Menu(self.menubar, tearoff=0)
     self.filemenu.add_command(label='Submenu 1')
     self.filemenu.add_command(label='Submenu 2')
     self.filemenu.add_command(label='Submenu 3')
     self.filemenu.add_separator()
-    self.filemenu.add_command(label='Close', command=self.parent.quit)
+    self.filemenu.add_command(label='Close', command=self.onClose)
     self.menubar.add_cascade(label='Menu 1', menu=self.filemenu)
+    self.parent.config(menu=self.menubar)
 
     self.canvasFrame = Frame(self.parent)#.grid(row=0, column=0)
     self.canvasContainer = LabelFrame(self.canvasFrame, text="Capture", width=self.windowSize['width'], height=self.windowSize['height'])

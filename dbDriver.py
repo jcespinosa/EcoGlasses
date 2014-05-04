@@ -15,16 +15,29 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>. #
 ########################################################################
 
-DB = 'ecoglasses'
-COLLECTION = 'logos'
+from pymongo import *
+from sys import argv
+
+client, db, logos = None, None, None
 
 def connect():
+  global client, db, collection
+  client = MongoClient('localhost', 27017)
+  db = client['ecoglasses']
+  logos = db['logos']
   return
 
-def get():
+def get(name):
+  global client, db, collection
+  cursor = db.logos.find({'id':name})
+  logo = list(cursor)
+  print logo
   return
 
-def foo():
+def main():
+  logo = argv[1]
+  connect()
+  get(logo)
   return
 
 if(__name__ == '__main__'):
