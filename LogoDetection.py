@@ -18,6 +18,8 @@
 import cv2 as cv
 import numpy as np
 
+import dbDriver
+
 from json import dumps
 from PIL import Image
 from sys import argv, path
@@ -97,8 +99,10 @@ def processResult(res):
     state, matches, logoName = res
     result = {
       'state': 1,
-      'message': 'Detected %s' % (logoName)
+      'message': 'Detected %s' % (logoName),
+      'data': dbDriver.get(logoName)
     }
+    print result
   return result
 
 # ======================================================================

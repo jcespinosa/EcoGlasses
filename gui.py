@@ -203,6 +203,7 @@ class Detection(threading.Thread):
 
   def processResult(self, res):
     if(res):
+      print res
       state = int(res['state'])
       if(state == 0):
         app.queue.put({'task': 1, 'color': 'black'})

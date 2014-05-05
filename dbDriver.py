@@ -31,14 +31,23 @@ def get(name):
   global client, db, collection
   cursor = db.logos.find({'id':name})
   logo = list(cursor)
+  logo = logo[0]
   print logo
-  return
+  result = {
+    'id': logo['id'],
+    'name': logo['name'],
+    'product': logo['product'],
+    'barcode': logo['barcode'],
+    'madein': logo['madein']
+  }
+  return result
 
 def main():
   logo = argv[1]
-  connect()
   get(logo)
   return
+
+connect()
 
 if(__name__ == '__main__'):
   main()
