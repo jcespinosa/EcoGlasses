@@ -122,7 +122,7 @@ class App(Frame):
       self.outline = task['color']
     elif(t == 2):
       self.message = task['message']
-      self.text = task['message']
+      self.text = task['text']
     else:
       pass
     self.updateWidgets()
@@ -206,14 +206,16 @@ class Detection(threading.Thread):
       state = int(res['state'])
       if(state == 0):
         app.queue.put({'task': 1, 'color': 'black'})
-        app.queue.put({'task': 2, 'message': 'Nothing detected'})
+        app.queue.put({'task': 2, 'message': 'Nothing detected', 'text': 'Nothing detected'})
         self.reset()
       elif(state == 1):
+        text = "Brand: %s\nProduct: %s\nMade in: %s\nBar code: %s\n"%(res['data']['name'],res['data']['product'],res['data']['madein'],res['data']['barcode'])
+        message = "Detected %s"%(res['data']['name'])
         app.queue.put({'task': 1, 'color': 'green'})
-        app.queue.put({'task': 2, 'message': "Detected %s"%(res['data']['name'])})
+        app.queue.put({'task': 2, 'message': message, 'text': text})
       else:
         app.queue.put({'task': 1, 'color': 'red'})
-        app.queue.put({'task': 2, 'message': 'Error!'})
+        app.queue.put({'task': 2, 'message': 'Error!', 'text': 'Error!'})
         self.reset()
     return
 
