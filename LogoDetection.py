@@ -53,7 +53,7 @@ class Server():
       message = dumps(message)
     except Exception, e:
       print e
-      message = '{"state":2}'
+      message = '{"state":2,"data": None}'
     return message
 
   def decode(self, message):
@@ -93,13 +93,12 @@ class Server():
 def processResult(res):
   result = {
     'state': 0,
-    'message': 'Nothing detected'
+    'data': None
   }
   if(res):
     state, matches, logoName = res
     result = {
       'state': 1,
-      'message': 'Detected %s' % (logoName),
       'data': dbDriver.get(logoName)
     }
     print result

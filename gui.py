@@ -203,7 +203,6 @@ class Detection(threading.Thread):
 
   def processResult(self, res):
     if(res):
-      print res
       state = int(res['state'])
       if(state == 0):
         app.queue.put({'task': 1, 'color': 'black'})
@@ -211,7 +210,7 @@ class Detection(threading.Thread):
         self.reset()
       elif(state == 1):
         app.queue.put({'task': 1, 'color': 'green'})
-        app.queue.put({'task': 2, 'message': res['message']})
+        app.queue.put({'task': 2, 'message': "Detected %s"%(res['data']['name'])})
       else:
         app.queue.put({'task': 1, 'color': 'red'})
         app.queue.put({'task': 2, 'message': 'Error!'})

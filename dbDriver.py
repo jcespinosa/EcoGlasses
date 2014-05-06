@@ -20,6 +20,13 @@ from sys import argv
 
 client, db, logos = None, None, None
 
+
+# ======================================================================
+# connect
+#
+# TODO
+#
+# ======================================================================
 def connect():
   global client, db, collection
   client = MongoClient('localhost', 27017)
@@ -27,21 +34,31 @@ def connect():
   logos = db['logos']
   return
 
+# ======================================================================
+# get
+#
+# TODO
+#
+# ======================================================================
 def get(name):
   global client, db, collection
+
   cursor = db.logos.find({'id':name})
   logo = list(cursor)
   logo = logo[0]
-  print logo
-  result = {
-    'id': logo['id'],
-    'name': logo['name'],
-    'product': logo['product'],
-    'barcode': logo['barcode'],
-    'madein': logo['madein']
-  }
+
+  result = dict()
+  for key in logo.keys():
+    result[key] = str(logo[key])
+
   return result
 
+# ======================================================================
+# main
+#
+# TODO
+#
+# ======================================================================
 def main():
   logo = argv[1]
   get(logo)
