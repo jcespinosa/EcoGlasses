@@ -88,6 +88,7 @@ class App(Frame):
     self.outline = 'black'
     self.message = 'Waiting ...'
     self.text = 'Waiting for server data'
+    self.canvasText = '';
 
     self.infoText.insert(INSERT, self.text)
 
@@ -99,6 +100,7 @@ class App(Frame):
     x2, y2 = x1 + w, y1 + h
     self.videoCanvas.create_rectangle(x1, y1, x2, y2, width=3.0, dash=(4,8), outline=self.outline)
     self.videoCanvas.create_text(320, 430, fill=self.outline, text=self.message)
+    self.videoCanvas.create_text(320, 200, fill='white', text=self.canvasText)
     self.infoText.delete('1.0', END)
     self.infoText.insert(INSERT, self.text)
     return
@@ -123,6 +125,7 @@ class App(Frame):
     elif(t == 2):
       self.message = task['message']
       self.text = task['text']
+      self.canvasText = task['text']
     else:
       pass
     self.updateWidgets()
@@ -332,6 +335,13 @@ def getROI(im):
 # ======================================================================
 if(__name__ == '__main__'):
   root = Tk()
+
+  #w, h = root.winfo_screenwidth(), root.winfo_screenheight()
+  #root.overrideredirect(1)
+  #root.geometry("%dx%d+0+0" % (w, h))
+  #root.focus_set() # <-- move focus to this widget
+  #root.bind("<Escape>", lambda e: e.widget.quit())
+
   detect = Detection()
   detect.start()
   app = App(root)
