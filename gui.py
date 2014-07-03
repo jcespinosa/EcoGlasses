@@ -27,6 +27,7 @@ from json import loads
 from time import sleep
 from Tkinter import *
 from PIL import Image, ImageTk
+from sys import argv
 
 
 # ======================================================================
@@ -37,10 +38,10 @@ from PIL import Image, ImageTk
 #
 # ======================================================================
 class App(Frame):
-  def __init__(self, parent):
+  def __init__(self, parent, width, height):
     Frame.__init__(self, parent)
     parent.wm_protocol ('WM_DELETE_WINDOW', self.onClose)
-    self.windowSize = {'width': 640, 'height': 480}
+    self.windowSize = {'width': width, 'height': height}
     self.parent = parent
     self.widgets = dict()
     self.buildUI() 
@@ -303,6 +304,7 @@ class Capture(threading.Thread):
 # ======================================================================
 def cv2pil(frame):
   h, w, d = frame.shape
+  print frame.shape
   f = Image.fromstring('RGB', (w,h), frame.tostring(), 'raw', 'BGR')
   return f
 
@@ -334,17 +336,23 @@ def getROI(im):
 # Main
 # ======================================================================
 if(__name__ == '__main__'):
-  root = Tk()
 
-  #w, h = root.winfo_screenwidth(), root.winfo_screenheight()
-  #root.overrideredirect(1)
-  #root.geometry("%dx%d+0+0" % (w, h))
-  #root.focus_set() # <-- move focus to this widget
-  #root.bind("<Escape>", lambda e: e.widget.quit())
+  debug = False
+  if(len(argv) > 1):
+    debug = True if(argv[1] == '-d') else False
+
+  root = Tk()
+  w, h = (640, 480)
+  if(not debug):
+    w, h = root.winfo_screenwidth(), root.winfo_screenheight()
+    root.overrideredirect(1)
+    root.geometry("%dx%d+0+0" % (w, h))
+    root.focus_set() # <-- move focus to this widget
+    root.bind("<Escape>", lambda e: e.widget.quit())
 
   detect = Detection()
   detect.start()
-  app = App(root)
+  app = App(root, w, h)
   capture = Capture()
   capture.start()
   root.mainloop()
