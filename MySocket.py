@@ -134,6 +134,8 @@ class ServerSocket(Socket):
       print '[O] The socket is ready.'
     except Exception, e:
       print "[X] An error has ocurred while binding to socket client %s, port %s." % (self.host, self.port)
+      self.port = int(raw_input('New port << '))
+      self.socket.bind((self.host, self.port))
       print " Exception >> %s" % (e)
     return
 

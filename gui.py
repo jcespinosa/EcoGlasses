@@ -58,52 +58,61 @@ class App(Frame):
 
   def buildUI(self):
     print '[>] Creating UI ...'
+    if(debug):
+      print '[!] Debug mode.'
+
     self.parent.title('Logo detection')
 
     self.menubar = Menu(self.parent)
     self.filemenu = Menu(self.menubar, tearoff=0)
-    self.filemenu.add_command(label='Submenu 1')
-    self.filemenu.add_command(label='Submenu 2')
-    self.filemenu.add_command(label='Submenu 3')
-    self.filemenu.add_separator()
     self.filemenu.add_command(label='Close', command=self.onClose)
     self.menubar.add_cascade(label='Menu 1', menu=self.filemenu)
     self.parent.config(menu=self.menubar)
 
-    self.canvasFrame = Frame(self.parent)#.grid(row=0, column=0)
-    self.canvasContainer = LabelFrame(self.canvasFrame, text="Capture", width=self.windowSize['width'], height=self.windowSize['height'])
-    self.videoCanvas = Canvas(self.canvasContainer, width=self.windowSize['width'], height=self.windowSize['height'])
-    self.videoCanvas.pack()
-    self.canvasFrame.pack(side=LEFT)
-    self.canvasContainer.pack(expand="yes", padx=5, pady=5)
-
-    self.infoFrame = Frame(self.parent)#.grid(row=0, column=1)
-    self.infoContainer = LabelFrame(self.infoFrame, text="Product information", padx=5, pady=5, width=self.windowSize['width']/2, height=self.windowSize['height'])
-    self.infoText = Text(self.infoContainer, width=50, height=29, background='white')
-    self.resetButton = Button(self.infoFrame, text="Reset detection", command=detect.reset)
-    self.infoFrame.pack(side=LEFT)
-    self.infoContainer.pack(expand="yes", padx=5, pady=5)
-    self.infoText.pack()
-    self.resetButton.pack()
-
-    self.outline = 'black'
+    self.outlineColor, self.canvasTextColor = 'black', 'black'
     self.message = 'Waiting ...'
+    self.canvasText = ''
     self.text = 'Waiting for server data'
-    self.canvasText = '';
 
-    self.infoText.insert(INSERT, self.text)
+    if(debug):
+      self.canvasFrame = Frame(self.parent)#.grid(row=0, column=0)
+      self.canvasContainer = LabelFrame(self.canvasFrame, text="Capture", width=self.windowSize['width'], height=self.windowSize['height'])
+      self.videoCanvas = Canvas(self.canvasContainer, width=self.windowSize['width'], height=self.windowSize['height'])
+      self.videoCanvas.pack()
+      self.canvasFrame.pack(side=LEFT)
+      self.canvasContainer.pack(expand="yes", padx=5, pady=5)
+
+      self.infoFrame = Frame(self.parent)#.grid(row=0, column=1)
+      self.infoContainer = LabelFrame(self.infoFrame, text="Product information", padx=5, pady=5, width=self.windowSize['width']/2, height=self.windowSize['height'])
+      self.infoText = Text(self.infoContainer, width=50, height=29, background='white')
+      self.resetButton = Button(self.infoFrame, text="Reset detection", command=detect.reset)
+      self.infoFrame.pack(side=LEFT)
+      self.infoContainer.pack(expand="yes", padx=5, pady=5)
+      self.infoText.pack()
+      self.resetButton.pack()
+
+      self.text = 'Waiting for server data'
+      self.infoText.insert(INSERT, self.text)
+      self.canvasTextColor = 'white'
+    else:
+      self.canvasFrame = Frame(self.parent).grid(row=0, column=0)
+      self.videoCanvas = Canvas(self.canvasFrame, width=self.windowSize['width'], height=self.windowSize['height'], bg="white")
+      self.videoCanvas.pack(side=LEFT)
 
     print '[O] UI ready.'
     return
 
   def updateWidgets(self):
+    if(debug):
+      self.infoText.delete('1.0', END)
+      self.infoText.insert(INSERT, self.text)
+    else:
+      self.videoCanvas.delete('all')
     x1, y1, h, w = calculateROI((self.windowSize['height'], self.windowSize['width'], None))
     x2, y2 = x1 + w, y1 + h
-    self.videoCanvas.create_rectangle(x1, y1, x2, y2, width=3.0, dash=(4,8), outline=self.outline)
-    self.videoCanvas.create_text(320, 430, fill=self.outline, text=self.message)
-    self.videoCanvas.create_text(320, 200, fill='white', text=self.canvasText)
-    self.infoText.delete('1.0', END)
-    self.infoText.insert(INSERT, self.text)
+    self.videoCanvas.create_rectangle(x1, y1, x2, y2, width=3.0, dash=(4,8), outline=self.outlineColor)
+    self.videoCanvas.create_text(self.windowSize['width']/2, (self.windowSize['height']/2)+200, fill=self.outlineColor, text=self.message)
+    self.videoCanvas.create_text(self.windowSize['width']/2, (self.windowSize['height']/2), fill=self.canvasTextColor, text=self.canvasText)
     return
 
   def loadFrame(self, frame):
@@ -122,7 +131,8 @@ class App(Frame):
     if(t == 0):
       self.loadFrame(task['frame']);
     elif(t == 1):
-      self.outline = task['color']
+      self.outlineColor = task['color']
+      print self.outlineColor
     elif(t == 2):
       self.message = task['message']
       self.text = task['text']
@@ -263,17 +273,17 @@ class Capture(threading.Thread):
     return
 
   def getFrame(self):
-    #cameraIndex = 1
+    cameraIndex = 0
 
-    #c = cv.waitKey(10)
-    #if(c == 'n'):
-    #  cameraIndex += 1
-    #  self.capture = cv.VideoCapture(1)
-    #  frame = None
-    #  if not self.capture:
-    #    cameraIndex = 0
-    #    self.capture = cv.VideoCapture(1)
-    #    frame = None   
+    c = cv.waitKey(10)
+    if(c == 'n'):
+      cameraIndex += 1
+      self.capture = cv.VideoCapture(0)
+      frame = None
+      if not self.capture:
+        cameraIndex = 0
+        self.capture = cv.VideoCapture(0)
+        frame = None   
 
     dump, self.cvFrame = self.capture.read()
     #self.cvFrame = cv.flip(self.cvFrame, 0) # Uncomment to flip the frame vertically
@@ -283,7 +293,7 @@ class Capture(threading.Thread):
     return
 
   def run(self):
-    self.capture = cv.VideoCapture(1)
+    self.capture = cv.VideoCapture(0)
 
     while(not self.stop):
       self.getFrame()
@@ -304,7 +314,6 @@ class Capture(threading.Thread):
 # ======================================================================
 def cv2pil(frame):
   h, w, d = frame.shape
-  print frame.shape
   f = Image.fromstring('RGB', (w,h), frame.tostring(), 'raw', 'BGR')
   return f
 
