@@ -262,17 +262,17 @@ class Capture(threading.Thread):
     return
 
   def getFrame(self):
-    cameraIndex = 0
+    #cameraIndex = 1
 
-    c = cv.waitKey(10)
-    if(c == 'n'):
-      cameraIndex += 1
-      self.capture = cv.VideoCapture(cameraIndex)
-      frame = None
-      if not self.capture:
-        cameraIndex = 0
-        self.capture = cv.VideoCapture(cameraIndex)
-        frame = None   
+    #c = cv.waitKey(10)
+    #if(c == 'n'):
+    #  cameraIndex += 1
+    #  self.capture = cv.VideoCapture(1)
+    #  frame = None
+    #  if not self.capture:
+    #    cameraIndex = 0
+    #    self.capture = cv.VideoCapture(1)
+    #    frame = None   
 
     dump, self.cvFrame = self.capture.read()
     #self.cvFrame = cv.flip(self.cvFrame, 0) # Uncomment to flip the frame vertically
@@ -282,7 +282,7 @@ class Capture(threading.Thread):
     return
 
   def run(self):
-    self.capture = cv.VideoCapture(0)
+    self.capture = cv.VideoCapture(1)
 
     while(not self.stop):
       self.getFrame()
