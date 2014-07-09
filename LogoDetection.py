@@ -46,7 +46,6 @@ class Server():
   def __init__(self):
     self.socket = ServerSocket(port=9999)
     self.socket.bind()
-    self.socket.wait()
 
   def encode(self, message):
     try:
@@ -78,9 +77,14 @@ class Server():
     message = self.decode(message)
     return message
 
+  def wait(self):
+    self.socket.wait()
+    return
+
   def close(self):
+    print '\n[O] Client connection closed.\n'
     self.socket.closeClient()
-    self.socket.close()
+    #self.socket.close()
     return
 
 
@@ -149,6 +153,41 @@ def preprocessFrame(frame):
   return frames
 
 # ======================================================================
+# preprocessFrame
+#
+# TODO
+#
+# ======================================================================
+def dispatch(detectionMethod):
+  s = Server()
+  
+  while(True):
+    s.wait()
+
+    while(True):
+      print '[>] Waiting for a frame ...'
+
+      data = s.receive()
+      if(not data):
+        cv.destroyAllWindows()
+        break
+      dCV, dPIL = data
+
+      if(dCV is not None):
+        frames = preprocessFrame(dCV)
+        frames, result = detect(frames, detectionMethod)
+        cv.imshow('from socket', frames['final'])
+        if(cv.waitKey(1) == 23):
+          break
+      else:
+        result = processResult(False)
+      s.send(result)
+
+    s.close()
+
+  return
+
+# ======================================================================
 # Main
 # ======================================================================
 def main():
@@ -167,29 +206,10 @@ def main():
   else:
     print '[>] Loading features ...'
     LOGOS = loadFeatures()
-  print '[O] Loaded.'
+  print '[O] Loaded.\n'
 
-  s = Server()
-  while(True):
-    print '[>] Waiting for a frame ...'
+  dispatch(detectionMethod)
 
-    data = s.receive()
-    if(not data):
-      break
-    dCV, dPIL = data
-
-    if(dCV is not None):
-      frames = preprocessFrame(dCV)
-      frames, result = detect(frames, detectionMethod)
-      cv.imshow('from socket', frames['final'])
-      if(cv.waitKey(1) == 23):
-        break
-    else:
-      result = processResult(False)
-    s.send(result)
-
-  s.close()
-  cv.destroyAllWindows()
   return
 
 if(__name__ == '__main__'):

@@ -96,11 +96,9 @@ class App(Frame):
       self.canvasTextColor = 'white'
     else:
       self.canvasFrame = Frame(self.parent)#.grid(row=0, column=0)
-      #self.canvasContainer = LabelFrame(self.canvasFrame, text="Capture", width=self.windowSize['width'], height=self.windowSize['height'])
       self.videoCanvas = Canvas(self.canvasFrame, width=self.windowSize['width'], height=self.windowSize['height'], bg="white")
       self.videoCanvas.pack(expand="yes")
       self.canvasFrame.pack(side=LEFT)
-      #self.canvasContainer.pack(expand="yes", padx=5, pady=5)
 
     print '[O] UI ready.'
     return

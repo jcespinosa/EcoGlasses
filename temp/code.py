@@ -116,7 +116,7 @@ if __name__ == '__main__':
     """Test code: Uses the two specified"""
     
     fn1 = "logo2.png"
-    fn2 = "in3.jpg"
+    fn2 = "in2.jpg"
  
     img1 = cv2.imread(fn1, 0)
     img2 = cv2.imread(fn2, 0)
