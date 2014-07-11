@@ -176,7 +176,7 @@ def dispatch(detectionMethod):
       if(dCV is not None):
         frames = preprocessFrame(dCV)
         frames, result = detect(frames, detectionMethod)
-        cv.imshow('from socket', frames['final'])
+        cv.imshow('Client Frame', frames['final'])
         if(cv.waitKey(1) == 23):
           break
       else:
