@@ -73,17 +73,17 @@ class Socket():
   def split(self, message, size=100):
     sMessage = self.encode(message)
     sMessage = self.compress(sMessage)
-    sMessage = [sMessage[i:i+size] for i in xrange(0, len(message), size)]
+    #sMessage = [sMessage[i:i+size] for i in xrange(0, len(message), size)]
     #sMessage = [self.encrypt(m) for m in sMessage]
-    sMessage = '|END|'.join(sMessage)
+    #sMessage = '|END|'.join(sMessage)
     sMessage += '|LAST|'
     return sMessage
 
   def join(self, message):
     jMessage = message.replace('|LAST|', '')
-    jMessage = jMessage.split('|END|')
+    #jMessage = jMessage.split('|END|')
     #jMessage = [self.decrypt(m) for m in jMessage]
-    jMessage = ''.join(jMessage)
+    #jMessage = ''.join(jMessage)
     jMessage = self.decompress(jMessage)
     jMessage = self.decode(jMessage)
     return jMessage
