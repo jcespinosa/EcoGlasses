@@ -108,6 +108,7 @@ class App(Frame):
     if(debug):
       self.infoText.delete('1.0', END)
       self.infoText.insert(INSERT, self.text)
+      pass
     else:
       self.videoCanvas.delete('all')
     x1, y1, h, w = calculateROI((self.windowSize['height'], self.windowSize['width'], None))
@@ -222,16 +223,16 @@ class Detection(threading.Thread):
       state = int(res['state'])
       if(state == 0):
         app.queue.put({'task': 1, 'color': 'black'})
-        app.queue.put({'task': 2, 'message': 'Nothing detected', 'text': 'Nothing detected'})
+        app.queue.put({'task': 2, 'message': 'Nada se ha detectado', 'text': 'Nada se ha detectado'})
         self.reset()
       elif(state == 1):
         text = "Brand: %s\nProduct: %s\nMade in: %s\nBar code: %s\n"%(res['data']['name'],res['data']['product'],res['data']['madein'],res['data']['barcode'])
-        message = "Detected %s"%(res['data']['name'])
+        message = "Se detecto %s"%(res['data']['name'])
         app.queue.put({'task': 1, 'color': 'green'})
         app.queue.put({'task': 2, 'message': message, 'text': text})
       else:
         app.queue.put({'task': 1, 'color': 'red'})
-        app.queue.put({'task': 2, 'message': 'Error!', 'text': 'Error!'})
+        app.queue.put({'task': 2, 'message': 'Ocurrio un error en la deteccion.', 'text': 'Nada se ha detectado'})
         self.reset()
     return
 
