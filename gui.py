@@ -29,6 +29,7 @@ from Tkinter import *
 from PIL import Image, ImageTk
 from sys import argv
 
+CAM_ID = 1
 
 # ======================================================================
 # App Class
@@ -77,7 +78,7 @@ class App(Frame):
     if(debug):
       self.canvasFrame = Frame(self.parent)#.grid(row=0, column=0)
       self.canvasContainer = LabelFrame(self.canvasFrame, text="Capture", width=self.windowSize['width'], height=self.windowSize['height'])
-      self.videoCanvas = Canvas(self.canvasContainer, width=self.windowSize['width'], height=self.windowSize['height'])
+      self.videoCanvas = Canvas(self.canvasContainer, width=self.windowSize['width'], height=self.windowSize['height'], bg="white")
       self.videoCanvas.pack()
       self.canvasFrame.pack(side=LEFT)
       self.canvasContainer.pack(expand="yes", padx=5, pady=5)
@@ -93,7 +94,7 @@ class App(Frame):
 
       self.text = 'Waiting for server data'
       self.infoText.insert(INSERT, self.text)
-      self.canvasTextColor = 'white'
+      self.canvasTextColor = 'black'
     else:
       self.canvasFrame = Frame(self.parent)#.grid(row=0, column=0)
       self.videoCanvas = Canvas(self.canvasFrame, width=self.windowSize['width'], height=self.windowSize['height'], bg="white")
@@ -112,8 +113,8 @@ class App(Frame):
     x1, y1, h, w = calculateROI((self.windowSize['height'], self.windowSize['width'], None))
     x2, y2 = x1 + w, y1 + h
     self.videoCanvas.create_rectangle(x1, y1, x2, y2, width=3.0, dash=(4,8), outline=self.outlineColor)
-    self.videoCanvas.create_text(self.windowSize['width']/2, (self.windowSize['height']/2)+200, fill=self.outlineColor, text=self.message)
-    self.videoCanvas.create_text(self.windowSize['width']/2, (self.windowSize['height']/2), fill=self.canvasTextColor, text=self.canvasText)
+    self.videoCanvas.create_text(self.windowSize['width']/2, (self.windowSize['height']/2)+200, font=("Ubuntu", 20), fill=self.outlineColor, text=self.message)
+    self.videoCanvas.create_text(self.windowSize['width']/2, (self.windowSize['height']/2), font=("Ubuntu", 20), fill=self.canvasTextColor, text=self.canvasText)
     return
 
   def loadFrame(self, frame):
@@ -279,11 +280,11 @@ class Capture(threading.Thread):
     c = cv.waitKey(10)
     if(c == 'n'):
       cameraIndex += 1
-      self.capture = cv.VideoCapture(0)
+      self.capture = cv.VideoCapture(CAM_ID)
       frame = None
       if not self.capture:
         cameraIndex = 0
-        self.capture = cv.VideoCapture(0)
+        self.capture = cv.VideoCapture(CAM_ID)
         frame = None   
 
     dump, self.cvFrame = self.capture.read()
@@ -294,7 +295,7 @@ class Capture(threading.Thread):
     return
 
   def run(self):
-    self.capture = cv.VideoCapture(0)
+    self.capture = cv.VideoCapture(CAM_ID)
 
     while(not self.stop):
       self.getFrame()
