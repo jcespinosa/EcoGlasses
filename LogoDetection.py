@@ -23,6 +23,7 @@ import dbDriver
 from json import dumps
 from PIL import Image
 from sys import argv, path
+from traceback import print_exc
 
 from FeatureExtraction import FeatureExtractor, loadFeatures, loadTemplates
 from MySocket import ServerSocket
@@ -94,19 +95,20 @@ class Server():
 # TODO
 #
 # ======================================================================
-def processResult(res):
+def processResult(res, frames):
   result = {
     'state': 0,
     'data': None
   }
   if(res):
-    state, matches, logoName = res
+    state, logoName, image = res
+    frames['final'] = image
     result = {
       'state': 1,
       'data': dbDriver.get(logoName)
     }
     print result
-  return result
+  return result, frames
 
 # ======================================================================
 # loadFeatures
@@ -114,7 +116,7 @@ def processResult(res):
 # TODO
 #
 # ======================================================================
-METHODS = {
+MATCHERS = {
   'bf': runBFMatcher,
   'flann': runFlannMatcher
 }
@@ -123,17 +125,18 @@ METHODS = {
 #  'template': runTemplateMatcher
 #}
 
-def detect(frames, method):
+def match(frames, method):
   if(method):
     frame = frames['temp'] if(method != 'template') else frames['gray']
     try:
-      res = METHODS[method](frame, frames['final'], LOGOS)
+      res = MATCHERS[method](frame, LOGOS)
     except Exception, e:
-      print '[X] Error calling detection method: %s' % (e)
-      frames['final'], res = frames['hsv'], False
+      print_exc()
+      print '[X] Error calling matcher method: %s' % (e)
+      res = False
   else:
-    frames['final'], res = frames['hsv'], False
-  res = processResult(res)
+    res = False
+  res, frames = processResult(res, frames)
   return frames, res
 
 # ======================================================================
@@ -158,7 +161,7 @@ def preprocessFrame(frame):
 # TODO
 #
 # ======================================================================
-def dispatch(detectionMethod):
+def dispatch(matcherMethod):
   s = Server()
   
   while(True):
@@ -175,7 +178,7 @@ def dispatch(detectionMethod):
 
       if(dCV is not None):
         frames = preprocessFrame(dCV)
-        frames, result = detect(frames, detectionMethod)
+        frames, result = match(frames, matcherMethod)
         cv.imshow('Client Frame', frames['final'])
         if(cv.waitKey(1) == 23):
           break
@@ -191,16 +194,16 @@ def dispatch(detectionMethod):
 # Main
 # ======================================================================
 def main():
-  detectionMethod = 'bf'
+  matcherMethod = 'bf'
 
   try:
-    detectionMethod = argv[1]
+    matcherMethod = argv[1]
   except Exception, e:
-    print '[!] One argument expected (detectionMethod [bf, flann, template, svm, knn]).'
-  print "[!] Using detection method %s." % (detectionMethod)
+    print '[!] One argument expected (matcherMethod [bf, flann, template, svm, knn]).'
+  print "[!] Using matcher method %s." % (matcherMethod)
 
   global LOGOS
-  if(detectionMethod == 'template'):
+  if(matcherMethod == 'template'):
     print '[>] Loading templates ...'
     LOGOS = loadTemplates()
   else:
@@ -208,7 +211,7 @@ def main():
     LOGOS = loadFeatures()
   print '[O] Loaded.\n'
 
-  dispatch(detectionMethod)
+  dispatch(matcherMethod)
 
   return
 

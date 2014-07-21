@@ -27,7 +27,7 @@ from sys import argv
 # FeatureExtraction
 #
 # Gets an external filename
-# Uses the SURF or SIFT Feature detection method to obtain the keypoints
+# Uses ORB Feature detection method to obtain the keypoints
 # and descriptors from the image
 # Saves the keypoints on a *.kp file
 # Saves the image and descriptors on a *.npy file
@@ -44,7 +44,7 @@ PATHS = {
 }
 
 # Posible logos to be detected
-LOGO_NAMES = ['kellogs', 'lala', 'quaker']
+LOGO_NAMES = ['kellogs', 'lala', 'quaker', 'kirkland']
 
 # ======================================================================
 # FeatureExtractor
@@ -67,9 +67,7 @@ def FeatureExtractor(cvImage=None, filename=None):
 
   imageGray = cv.cvtColor(inputImage, cv.COLOR_BGR2GRAY)
 
-  #detector = cv.SURF(5000)
-  #detector = cv.SIFT()
-  detector = cv.ORB()
+  detector = cv.ORB(nfeatures=1000)
   keypoints, descriptors = detector.detectAndCompute(imageGray, None, useProvidedKeypoints=False)
 
   template['image'] = inputImage

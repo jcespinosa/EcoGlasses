@@ -33,5 +33,19 @@
     "product": "none",
     "barcode": "none",
     "madein": "none"
+  },
+  {
+    "id": "kirkland",
+    "name": "Kirkland",
+    "product": "none",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "sony",
+    "name": "Sony",
+    "product": "none",
+    "barcode": "none",
+    "madein": "none"
   }
 ]

@@ -10,7 +10,7 @@ USAGE
   find_obj.py <image1> <image2>
 '''
  
-import numpy
+import numpy as np
 import cv2
  
 import sys
@@ -61,9 +61,9 @@ def explore_match(win, img1, img2, kp_pairs, status = None, H = None):
         cv2.polylines(vis, [corners], True, (255, 255, 255))
  
     if status is None:
-        status = numpy.ones(len(kp_pairs), numpy.bool_)
-    p1 = numpy.int32([kpp[0].pt for kpp in kp_pairs])
-    p2 = numpy.int32([kpp[1].pt for kpp in kp_pairs]) + (w1, 0)
+        status = np.ones(len(kp_pairs), np.bool_)
+    p1 = np.int32([kpp[0].pt for kpp in kp_pairs])
+    p2 = np.int32([kpp[1].pt for kpp in kp_pairs]) + (w1, 0)
  
     green = (0, 255, 0)
     red = (0, 0, 255)
