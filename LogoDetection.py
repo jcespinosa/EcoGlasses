@@ -148,6 +148,7 @@ def match(frames, method):
 def preprocessFrame(frame):
   print '[>] Preprocessing frame ...'
   frames = {'original': frame, 'final': frame}
+  frames['blank'] = np.zeros(frame.shape, dtype=np.uint8)
   frames['gray'] = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
   #frames['blur'] = smooth(frame, mat=(15,15))
   frames['hsv'] = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
@@ -166,13 +167,13 @@ def dispatch(matcherMethod):
   
   while(True):
     s.wait()
-
+    cv.namedWindow('Client Frame')
+    cv.waitKey(30)
     while(True):
       print '[>] Waiting for a frame ...'
 
       data = s.receive()
       if(not data):
-        cv.destroyAllWindows()
         break
       dCV, dPIL = data
 
@@ -180,13 +181,16 @@ def dispatch(matcherMethod):
         frames = preprocessFrame(dCV)
         frames, result = match(frames, matcherMethod)
         cv.imshow('Client Frame', frames['final'])
-        if(cv.waitKey(1) == 23):
-          break
+        cv.waitKey(30)
       else:
         result = processResult(False)
       s.send(result)
 
     s.close()
+    cv.destroyWindow('Client Frame')
+    cv.waitKey(30)
+    cv.imshow('Client Frame', frames['blank'])
+    
 
   return
 

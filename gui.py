@@ -230,13 +230,13 @@ class Detection(threading.Thread):
         app.queue.put({'task': 2, 'message': 'Nada se ha detectado.', 'text': ''})
         self.reset()
       elif(state == 1):
-        text = "Brand: %s\nProduct: %s\nMade in: %s\nBar code: %s\n"%(res['data']['name'],res['data']['product'],res['data']['madein'],res['data']['barcode'])
+        text = "Marca: %s\nProducto: %s\nHecho en: %s\nCodigo: %s\n"%(res['data']['name'],res['data']['product'],res['data']['madein'],res['data']['barcode'])
         message = "Se detecto %s"%(res['data']['name'])
         app.queue.put({'task': 1, 'color1': 'green', 'color2': 'green'})
         app.queue.put({'task': 2, 'message': message, 'text': text})
       else:
         app.queue.put({'task': 1, 'color1': 'red', 'color2': 'red'})
-        app.queue.put({'task': 2, 'message': 'Ocurrio un error en la deteccion.', 'text': ''})
+        app.queue.put({'task': 2, 'message': 'Ocurrio un error en la deteccion.', 'text': 'Error'})
         self.reset()
     return
 
@@ -255,7 +255,7 @@ class Detection(threading.Thread):
     s = Client()
     while(not self.stop):
       self.sendFrame(s)
-      sleep(2.0)
+      sleep(1.5)
     s.close()
 
     print '[!] Terminating Detection thread.'
