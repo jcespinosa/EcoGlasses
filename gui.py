@@ -29,7 +29,7 @@ from Tkinter import *
 from PIL import Image, ImageTk
 from sys import argv
 
-CAM_ID = 1
+CAM_ID = 0
 
 # ======================================================================
 # App Class
@@ -44,7 +44,6 @@ class App(Frame):
     parent.wm_protocol ('WM_DELETE_WINDOW', self.onClose)
     self.windowSize = {'width': width, 'height': height}
     self.parent = parent
-    self.widgets = dict()
     self.buildUI() 
     self.queue = Queue.Queue()
     self.processQueue()
@@ -62,23 +61,24 @@ class App(Frame):
     if(debug):
       print '[!] Debug mode.'
 
-    self.parent.title('Logo detection')
+    self.parent.title('EcoGlasses debug window')
 
     self.menubar = Menu(self.parent)
     self.filemenu = Menu(self.menubar, tearoff=0)
+    self.filemenu.add_command(label='Reset', command=detect.reset)
     self.filemenu.add_command(label='Close', command=self.onClose)
     self.menubar.add_cascade(label='Menu 1', menu=self.filemenu)
     self.parent.config(menu=self.menubar)
 
-    self.outlineColor, self.canvasTextColor = 'black', 'black'
-    self.message = 'Waiting ...'
+    self.outlineColor, self.canvasTextColor, self.backgroundColor = 'black', 'black', 'white'
+    self.message = 'Esperando conexion con servidor ...'
     self.canvasText = ''
-    self.text = 'Waiting for server data'
+    self.text = 'Waiting for server data ...'
 
     if(debug):
       self.canvasFrame = Frame(self.parent)#.grid(row=0, column=0)
       self.canvasContainer = LabelFrame(self.canvasFrame, text="Capture", width=self.windowSize['width'], height=self.windowSize['height'])
-      self.videoCanvas = Canvas(self.canvasContainer, width=self.windowSize['width'], height=self.windowSize['height'], bg="white")
+      self.videoCanvas = Canvas(self.canvasContainer, width=self.windowSize['width'], height=self.windowSize['height'], bg=self.backgroundColor)
       self.videoCanvas.pack()
       self.canvasFrame.pack(side=LEFT)
       self.canvasContainer.pack(expand="yes", padx=5, pady=5)
@@ -92,14 +92,14 @@ class App(Frame):
       self.infoText.pack()
       self.resetButton.pack()
 
-      self.text = 'Waiting for server data'
       self.infoText.insert(INSERT, self.text)
-      self.canvasTextColor = 'black'
+      self.canvasFontSize = 20
     else:
       self.canvasFrame = Frame(self.parent)#.grid(row=0, column=0)
-      self.videoCanvas = Canvas(self.canvasFrame, width=self.windowSize['width'], height=self.windowSize['height'], bg="white")
+      self.videoCanvas = Canvas(self.canvasFrame, width=self.windowSize['width'], height=self.windowSize['height'], bg=self.backgroundColor)
       self.videoCanvas.pack(expand="yes")
       self.canvasFrame.pack(side=LEFT)
+      self.canvasFontSize = 45
 
     print '[O] UI ready.'
     return
@@ -108,14 +108,18 @@ class App(Frame):
     if(debug):
       self.infoText.delete('1.0', END)
       self.infoText.insert(INSERT, self.text)
-      pass
     else:
-      self.videoCanvas.delete('all')
+      if(feedback):
+        pass
+      else:
+        self.videoCanvas.delete('all')
+      pass
     x1, y1, h, w = calculateROI((self.windowSize['height'], self.windowSize['width'], None))
     x2, y2 = x1 + w, y1 + h
-    self.videoCanvas.create_rectangle(x1, y1, x2, y2, width=3.0, dash=(4,8), outline=self.outlineColor)
-    self.videoCanvas.create_text(self.windowSize['width']/2, (self.windowSize['height']/2)+200, font=("Ubuntu", 20), fill=self.outlineColor, text=self.message)
-    self.videoCanvas.create_text(self.windowSize['width']/2, (self.windowSize['height']/2), font=("Ubuntu", 20), fill=self.canvasTextColor, text=self.canvasText)
+    self.videoCanvas.create_rectangle(x1, y1, x2, y2, width=8.0, dash=(10,15), outline=self.outlineColor)
+    self.videoCanvas.create_text(self.windowSize['width']/2, (self.windowSize['height']/2)+250, font=("Ubuntu", self.canvasFontSize), fill=self.canvasTextColor, text=self.message)
+    self.videoCanvas.create_text(self.windowSize['width']/2, (self.windowSize['height']/2), font=("Ubuntu", self.canvasFontSize), fill=self.canvasTextColor, text=self.canvasText)
+    self.videoCanvas.configure(bg=self.backgroundColor)
     return
 
   def loadFrame(self, frame):
@@ -134,8 +138,8 @@ class App(Frame):
     if(t == 0):
       self.loadFrame(task['frame']);
     elif(t == 1):
-      self.outlineColor = task['color']
-      print self.outlineColor
+      self.outlineColor = task['color1']
+      self.backgroundColor = task['color2']
     elif(t == 2):
       self.message = task['message']
       self.text = task['text']
@@ -165,8 +169,8 @@ class Client():
     self.socket.connect()
 
   def encode(self, message):
-    eSTR = message.tostring()
-    return eSTR
+    message = message.tostring()
+    return message
 
   def decode(self, message):
     try:
@@ -209,7 +213,7 @@ class Detection(threading.Thread):
 
   def reset(self):
     self.state = 'idle'
-    print "Reset"
+    #print "Reset"
     return
 
   def setFrame(self, frame):
@@ -222,17 +226,17 @@ class Detection(threading.Thread):
     if(res):
       state = int(res['state'])
       if(state == 0):
-        app.queue.put({'task': 1, 'color': 'black'})
-        app.queue.put({'task': 2, 'message': 'Nada se ha detectado', 'text': 'Nada se ha detectado'})
+        app.queue.put({'task': 1, 'color1': 'black', 'color2': 'white'})
+        app.queue.put({'task': 2, 'message': 'Nada se ha detectado.', 'text': ''})
         self.reset()
       elif(state == 1):
         text = "Brand: %s\nProduct: %s\nMade in: %s\nBar code: %s\n"%(res['data']['name'],res['data']['product'],res['data']['madein'],res['data']['barcode'])
         message = "Se detecto %s"%(res['data']['name'])
-        app.queue.put({'task': 1, 'color': 'green'})
+        app.queue.put({'task': 1, 'color1': 'green', 'color2': 'green'})
         app.queue.put({'task': 2, 'message': message, 'text': text})
       else:
-        app.queue.put({'task': 1, 'color': 'red'})
-        app.queue.put({'task': 2, 'message': 'Ocurrio un error en la deteccion.', 'text': 'Nada se ha detectado'})
+        app.queue.put({'task': 1, 'color1': 'red', 'color2': 'red'})
+        app.queue.put({'task': 2, 'message': 'Ocurrio un error en la deteccion.', 'text': ''})
         self.reset()
     return
 
@@ -276,16 +280,16 @@ class Capture(threading.Thread):
     return
 
   def getFrame(self):
-    cameraIndex = 0
+    cameraIndex = CAM_ID
 
     c = cv.waitKey(10)
     if(c == 'n'):
       cameraIndex += 1
-      self.capture = cv.VideoCapture(CAM_ID)
+      self.capture = cv.VideoCapture(cameraIndex)
       frame = None
       if not self.capture:
         cameraIndex = 0
-        self.capture = cv.VideoCapture(CAM_ID)
+        self.capture = cv.VideoCapture(cameraIndex)
         frame = None   
 
     dump, self.cvFrame = self.capture.read()
@@ -317,8 +321,8 @@ class Capture(threading.Thread):
 # ======================================================================
 def cv2pil(frame):
   h, w, d = frame.shape
-  f = Image.fromstring('RGB', (w,h), frame.tostring(), 'raw', 'BGR')
-  return f
+  frame = Image.fromstring('RGB', (w,h), frame.tostring(), 'raw', 'BGR')
+  return frame
 
 # ======================================================================
 # calculateROI
@@ -349,9 +353,10 @@ def getROI(im):
 # ======================================================================
 if(__name__ == '__main__'):
 
-  debug = False
+  debug, feedback = False, False
   if(len(argv) > 1):
     debug = True if(argv[1] == '-d') else False
+    feedback = True if(argv[1] == '-f') else False
 
   root = Tk()
   w, h = (640, 480)
@@ -360,7 +365,7 @@ if(__name__ == '__main__'):
     root.overrideredirect(1)
     root.geometry("%dx%d+0+0" % (w, h))
     root.focus_set() # <-- move focus to this widget
-    root.bind("<Escape>", lambda e: e.widget.quit())
+    root.bind("<Key>", lambda e: e.widget.quit())
 
   detect = Detection()
   detect.start()
