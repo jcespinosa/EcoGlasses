@@ -67,7 +67,7 @@ def FeatureExtractor(cvImage=None, filename=None):
 
   imageGray = cv.cvtColor(inputImage, cv.COLOR_BGR2GRAY)
 
-  detector = cv.ORB(nfeatures=1000)
+  detector = cv.ORB(nfeatures=500)
   keypoints, descriptors = detector.detectAndCompute(imageGray, None, useProvidedKeypoints=False)
 
   template['image'] = inputImage
@@ -156,7 +156,7 @@ def loadTemplates():
 #
 # ======================================================================
 def saveKeypoints(filename, keypoints):
-  kArray = []
+  kArray = list()
 
   for point in keypoints:
     keypoint = (point.pt, point.size, point.angle, point.response, point.octave, point.class_id)
@@ -174,14 +174,14 @@ def saveKeypoints(filename, keypoints):
 #
 # ======================================================================
 def loadKeypoints(filename):
-  keypoints = []
+  keypoints = list()
 
   try:
     with open(filename, 'rb') as inputFile:
       kArray = pickle.load(inputFile)
 
     for point in kArray:
-      feature = cv.KeyPoint(
+      keypoint = cv.KeyPoint(
         x=point[0][0],
         y=point[0][1],
         _size=point[1],
@@ -191,7 +191,7 @@ def loadKeypoints(filename):
         _class_id=point[5]
       )
 
-      keypoints.append(feature)      
+      keypoints.append(keypoint)      
   except:
     return False, None
   return True, keypoints
