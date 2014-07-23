@@ -19,7 +19,7 @@ import cv2 as cv
 import numpy as np
 
 
-KNN_MATCHER = True
+KNN_MATCHER = False
 
 # ======================================================================
 # BRUTE FORCE MATCHER
