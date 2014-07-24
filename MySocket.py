@@ -16,12 +16,12 @@
 ########################################################################
 
 import socket
-import zlib
 
 from base64 import b64encode, b64decode
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from sys import getsizeof
+from zlib import compress, decompress
 
 
 # ======================================================================
@@ -49,11 +49,11 @@ class Socket():
     return decoded
 
   def compress(self, message):
-    compressed = zlib.compress(message)
+    compressed = compress(message)
     return compressed
 
   def decompress(self, message):
-    decompressed = zlib.decompress(message)
+    decompressed = decompress(message)
     return decompressed
 
   def encrypt(self, message):
@@ -71,6 +71,7 @@ class Socket():
     return decrypted
 
   def split(self, message, size=100):
+    sMessage = message
     sMessage = self.encode(message)
     sMessage = self.compress(sMessage)
     #sMessage = [sMessage[i:i+size] for i in xrange(0, len(message), size)]

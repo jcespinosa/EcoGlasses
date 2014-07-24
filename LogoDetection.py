@@ -18,13 +18,11 @@
 import cv2 as cv
 import numpy as np
 
-import dbDriver
-
-from json import dumps
-from PIL import Image
+from cPickle import dumps, loads
 from sys import argv, path
 from traceback import print_exc
 
+from dbDriver import get
 from FeatureExtraction import FeatureExtractor, loadFeatures, loadTemplates
 from MySocket import ServerSocket
 
@@ -50,21 +48,19 @@ class Server():
 
   def encode(self, message):
     try:
-      message = dumps(message)
+      message = dumps(message, 2)
     except Exception, e:
       print e
-      message = '{"state":2,"data": None}'
+      message = dumps({'state':2,'data': None}, 2)
     return message
 
   def decode(self, message):
     try:
-      dPIL = Image.fromstring('RGB', (350, 350), message, 'raw','BGR')
-      dCV = np.array(dPIL)
-      dCV = cv.cvtColor(dCV, cv.COLOR_RGB2BGR)
+      message = loads(message)
     except Exception, e:
-      print '[X] Error decoding message: %s.' % (e)
-      dCV, dPIL = None, None
-    return dCV, dPIL
+      message = False
+      print "[X] Error decoding the message from the client %s." % (e)
+    return message
 
   def send(self, message):
     message = self.encode(message)
@@ -74,9 +70,9 @@ class Server():
   def receive(self):
     message = self.socket.receive()
     if('CLOSE' in message):
-      return False
+      return False, message
     message = self.decode(message)
-    return message
+    return True, message
 
   def wait(self):
     self.socket.wait()
@@ -105,7 +101,7 @@ def processResult(res, frames):
     frames['final'] = image
     result = {
       'state': 1,
-      'data': dbDriver.get(logoName)
+      'data': get(logoName)
     }
     print result
   return result, frames
@@ -172,18 +168,15 @@ def dispatch(matcherMethod):
     while(True):
       print '[>] Waiting for a frame ...'
 
-      data = s.receive()
-      if(not data):
-        break
-      dCV, dPIL = data
+      status, frame = s.receive()
 
-      if(dCV is not None):
-        frames = preprocessFrame(dCV)
-        frames, result = match(frames, matcherMethod)
-        cv.imshow('Client Frame', frames['final'])
-        cv.waitKey(30)
-      else:
-        result = processResult(False)
+      if(not status):
+        break
+
+      frames = preprocessFrame(frame)
+      frames, result = match(frames, matcherMethod)
+      cv.imshow('Client Frame', frames['final'])
+      cv.waitKey(30)
       s.send(result)
 
     s.close()

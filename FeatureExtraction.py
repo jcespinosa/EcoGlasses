@@ -15,12 +15,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>. #
 ########################################################################
 
-import cPickle as pickle
 import cv2 as cv
 import numpy as np
-import os
 
+from cPickle import dump, load
 from sys import argv
+from os import mkdir, path
 
 
 # ======================================================================
@@ -163,7 +163,7 @@ def saveKeypoints(filename, keypoints):
     kArray.append(keypoint)
   
   with open(filename, 'wb') as outputFile:
-    pickle.dump(kArray, outputFile)
+    dump(kArray, outputFile)
   return
 
 
@@ -178,7 +178,7 @@ def loadKeypoints(filename):
 
   try:
     with open(filename, 'rb') as inputFile:
-      kArray = pickle.load(inputFile)
+      kArray = load(inputFile)
 
     for point in kArray:
       keypoint = cv.KeyPoint(
@@ -229,12 +229,12 @@ def showFeatures(filename, temp):
 def extraction(inputName, extension, show=False):
   imagePath = PATHS['logos'] + inputName + '/'
 
-  if(os.path.exists(imagePath)):
+  if(path.exists(imagePath)):
     count = 1
     while(True):
       filename = imagePath + str(count) + '.' + extension
 
-      if(not os.path.exists(filename)):
+      if(not path.exists(filename)):
         print "[!] File '%s' not found, the sequence is broken, end reached." % (filename)
         break
 
@@ -265,13 +265,13 @@ def createPATHS(inputName):
   flag = False
 
   for path in PATHS:
-    if(not os.path.exists(path)):
-      os.mkdir(path)
+    if(not path.exists(path)):
+      mkdir(path)
       flag = True
 
     p = path + '/' + inputName + '/'
-    if(not os.path.exists(p)):
-      os.mkdir(p)
+    if(not path.exists(p)):
+      mkdir(p)
       flag = True
   return flag
 

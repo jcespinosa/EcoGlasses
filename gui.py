@@ -18,16 +18,16 @@
 import cv2 as cv
 import numpy as np
 import threading
-import traceback
-import Queue
 
 from MySocket import ClientSocket
 
-from json import loads
+from cPickle import dumps, loads
 from time import sleep
 from Tkinter import *
+from traceback import print_exc
 from PIL import Image, ImageTk
 from sys import argv
+from Queue import Queue
 
 CAM_ID = 0
 
@@ -45,7 +45,7 @@ class App(Frame):
     self.windowSize = {'width': width, 'height': height}
     self.parent = parent
     self.buildUI() 
-    self.queue = Queue.Queue()
+    self.queue = Queue()
     self.processQueue()
     return
 
@@ -169,7 +169,7 @@ class Client():
     self.socket.connect()
 
   def encode(self, message):
-    message = message.tostring()
+    message = dumps(message, 2)
     return message
 
   def decode(self, message):
@@ -194,6 +194,7 @@ class Client():
     return message
 
   def close(self):
+    print '\n[O] Closing connection with the server.\n'
     self.socket.send('CLOSE')
     self.socket.close()
     return

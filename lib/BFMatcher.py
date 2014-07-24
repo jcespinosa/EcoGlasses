@@ -19,11 +19,11 @@ import cv2 as cv
 import numpy as np
 
 
-KNN_MATCHER = False
-
 # ======================================================================
 # BRUTE FORCE MATCHER
 # ======================================================================
+KNN_MATCHER = False
+
 try:
   matcher = cv.BFMatcher(cv.NORM_HAMMING) if(KNN_MATCHER) else cv.BFMatcher(cv.NORM_HAMMING, crossCheck=True)
 except Exception, e:
@@ -85,7 +85,6 @@ def filterMatches(kp1, kp2, matches, ratio=0.50):
   global KNN_MATCHER
 
   mkp1, mkp2 = list(), list()
-  threshold = None
 
   if(not KNN_MATCHER):
     matches = sorted(matches, key = lambda x:x.distance)
@@ -98,9 +97,8 @@ def filterMatches(kp1, kp2, matches, ratio=0.50):
         mkp2.append(kp2[m.trainIdx])
 
   else:
-    threshold = ratio
     for m in matches:
-      if(len(m) == 2 and m[0].distance < (m[1].distance * threshold)):
+      if(len(m) == 2 and m[0].distance < (m[1].distance * ratio)):
         m = m[0]
         mkp1.append(kp1[m.queryIdx])
         mkp2.append(kp2[m.trainIdx])
