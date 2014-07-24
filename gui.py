@@ -19,8 +19,6 @@ import cv2 as cv
 import numpy as np
 import threading
 
-from MySocket import ClientSocket
-
 from cPickle import dumps, loads
 from time import sleep
 from Tkinter import *
@@ -28,6 +26,8 @@ from traceback import print_exc
 from PIL import Image, ImageTk
 from sys import argv
 from Queue import Queue
+
+from MySocket import ClientSocket
 
 CAM_ID = 0
 

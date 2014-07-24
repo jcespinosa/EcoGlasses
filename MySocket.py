@@ -17,7 +17,7 @@
 
 import socket
 
-from base64 import b64encode, b64decode
+from base64 import b64decode, b64encode
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from sys import getsizeof

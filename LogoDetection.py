@@ -69,10 +69,11 @@ class Server():
 
   def receive(self):
     message = self.socket.receive()
-    if('CLOSE' in message):
-      return False, message
-    message = self.decode(message)
-    return True, message
+    if(message):
+      message = self.decode(message)
+    else:
+      message = False
+    return message
 
   def wait(self):
     self.socket.wait()
@@ -170,7 +171,7 @@ def dispatch(matcherMethod):
 
       status, frame = s.receive()
 
-      if(not status):
+      if(not status or frame == 'CLOSE'):
         break
 
       frames = preprocessFrame(frame)

@@ -19,8 +19,8 @@ import cv2 as cv
 import numpy as np
 
 from cPickle import dump, load
-from sys import argv
 from os import mkdir, path
+from sys import argv
 
 
 # ======================================================================
