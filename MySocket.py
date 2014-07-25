@@ -105,7 +105,7 @@ class Socket():
       chunk = ''
     data = self.join(data)
     self.toFile("from%s"%(m), data)
-    print "[O] Received %d bytes from %s." % (getsizeof(data), m)
+    print "[O] Received message from %s (%d bytes)." % (m, getsizeof(data))
     return data
 
   def close(self):

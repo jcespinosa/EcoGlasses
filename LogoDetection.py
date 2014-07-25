@@ -47,18 +47,14 @@ class Server():
     self.socket.bind()
 
   def encode(self, message):
-    try:
-      message = dumps(message, 2)
-    except Exception, e:
-      print e
-      message = dumps({'state':2,'data': None}, 2)
+    message = dumps(message, 2)   
     return message
 
   def decode(self, message):
     try:
       message = loads(message)
     except Exception, e:
-      message = False
+      message = None
       print "[X] Error decoding the message from the client %s." % (e)
     return message
 
@@ -72,7 +68,7 @@ class Server():
     if(message):
       message = self.decode(message)
     else:
-      message = False
+      message = None
     return message
 
   def wait(self):
@@ -93,18 +89,23 @@ class Server():
 #
 # ======================================================================
 def processResult(res, frames):
+  state, logoName, matches, image = res
+
   result = {
-    'state': 0,
+    'state': state,
     'data': None
   }
-  if(res):
-    state, logoName, image = res
+
+  if(state == 0):
+    result['data'] = None
+  elif(state == 1):
+    result['data'] = get(logoName)
     frames['final'] = image
-    result = {
-      'state': 1,
-      'data': get(logoName)
-    }
-    print result
+  else:
+    result['data'] = None
+
+  print result
+
   return result, frames
 
 # ======================================================================
@@ -128,13 +129,13 @@ def match(frames, method):
     try:
       res = MATCHERS[method](frame, LOGOS)
     except Exception, e:
-      print_exc()
       print '[X] Error calling matcher method: %s' % (e)
-      res = False
+      print_exc()
+      res = (2, None, 0, None)
   else:
-    res = False
+    res = (2, None, 0, None)
   res, frames = processResult(res, frames)
-  return frames, res
+  return res, frames
 
 # ======================================================================
 # preprocessFrame
@@ -144,12 +145,15 @@ def match(frames, method):
 # ======================================================================
 def preprocessFrame(frame):
   print '[>] Preprocessing frame ...'
-  frames = {'original': frame, 'final': frame}
-  frames['blank'] = np.zeros(frame.shape, dtype=np.uint8)
-  frames['gray'] = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+  frames = {
+    'original': frame,
+    'final': frame,
+    'blank': np.zeros(frame.shape, dtype=np.uint8),
+    'gray': cv.cvtColor(frame, cv.COLOR_BGR2GRAY),
+    'hsv': cv.cvtColor(frame, cv.COLOR_BGR2HSV),
+    'temp': FeatureExtractor(cvImage=frame)
+  }
   #frames['blur'] = smooth(frame, mat=(15,15))
-  frames['hsv'] = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-  frames['temp'] = FeatureExtractor(cvImage=frame)
   print '[O] Frame is ready ...'
   return frames
 
@@ -165,27 +169,25 @@ def dispatch(matcherMethod):
   while(True):
     s.wait()
     cv.namedWindow('Client Frame')
-    cv.waitKey(30)
     while(True):
       print '[>] Waiting for a frame ...'
 
-      status, frame = s.receive()
+      frame = s.receive()
 
-      if(not status or frame == 'CLOSE'):
+      if(frame is None or 'CLOSE' in frame):
         break
 
       frames = preprocessFrame(frame)
-      frames, result = match(frames, matcherMethod)
+      result, frames = match(frames, matcherMethod)
       cv.imshow('Client Frame', frames['final'])
-      cv.waitKey(30)
+      cv.waitKey(100)
       s.send(result)
 
     s.close()
     cv.destroyWindow('Client Frame')
-    cv.waitKey(30)
-    cv.imshow('Client Frame', frames['blank'])
+    for i in range(10):
+      cv.waitKey(100)
     
-
   return
 
 # ======================================================================

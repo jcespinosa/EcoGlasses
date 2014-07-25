@@ -29,7 +29,7 @@ try:
   flannParams = {
     'algorithm': FLANN_INDEX_LSH,
     'table_number': 6, # 12
-    'key_size': 12,     # 20
+    'key_size': 12, # 20
     'multi_probe_level': 1 #2
   }
   searchParams = {
@@ -56,12 +56,12 @@ def exploreMatch(img1, img2, kpPairs, status = None, H = None):
   vis[:h2, w1:w1+w2] = img2
   vis = cv.cvtColor(vis, cv.COLOR_GRAY2BGR)
 
-  if H is not None:
+  if(H is not None):
     corners = np.float32([[0, 0], [w1, 0], [w1, h1], [0, h1]])
     corners = np.int32(cv.perspectiveTransform(corners.reshape(1, -1, 2), H).reshape(-1, 2) + (w1, 0))
     cv.polylines(vis, [corners], True, (255, 255, 255))
 
-  if status is None:
+  if(status is None):
     status = np.ones(len(kpPairs), np.bool_)
 
   p1 = np.int32([kpp[0].pt for kpp in kpPairs])
@@ -116,6 +116,9 @@ def filterMatches(kp1, kp2, matches, ratio=0.60):
 def run(temp, LOGOS):
   global matcher
 
+  rawMatches, ratio, minMatches = None, None, None
+  H, status = None, None
+
   if(matcher):
     for name, logo in LOGOS.iteritems():
       for template in logo:
@@ -137,8 +140,8 @@ def run(temp, LOGOS):
 
         if(matches >= 10):
           print 'Matches > %d' % (matches)
-          return (True, name, image)
+          return (1, name, matches, image)
   else:
-    return False
+    return (2, None, 0, None)
 
-  return False
+  return (0, None, 0, None)

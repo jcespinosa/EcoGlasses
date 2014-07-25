@@ -94,7 +94,7 @@ def loadFeatures():
     while(True):
       path = '%s/%d'%(name, count)
 
-      a, keypoints = loadKeypoints(PATHS['keypoints'] + path + '.kp')
+      keypoints = loadKeypoints(PATHS['keypoints'] + path + '.kp')
       
       if(not keypoints):
         print "[!] Template for '%s' not found, the sequence is broken, end reached." % (path)
@@ -138,7 +138,7 @@ def loadTemplates():
         print "[X] %s" % (e)
         break
 
-      if(template == None):
+      if(template is None):
         print "[!] Template for '%s' not found, the sequence is broken, end reached." % (path)
         break
 
@@ -193,8 +193,8 @@ def loadKeypoints(filename):
 
       keypoints.append(keypoint)      
   except:
-    return False, None
-  return True, keypoints
+    return None
+  return keypoints
 
 
 # ======================================================================
@@ -212,8 +212,8 @@ def showFeatures(filename, temp):
   print '[!] Press ESC to continue.'
   while(True):
     cv.imshow("Features on %s" % (filename), temp['image'])
-    c = cv.waitKey(33)
-    print "You pressed %d (0x%x), LSB: %d (%s)." % (c, c, c % 256, repr(chr(c%256)) if c%256 < 128 else '?')
+    c = cv.waitKey(100)
+    #print "You pressed %d (0x%x), LSB: %d (%s)." % (c, c, c % 256, repr(chr(c%256)) if c%256 < 128 else '?')
     if((c % 256) == 27): #(ESC)
       cv.destroyWindow("Features on %s"%(filename))
       break
@@ -273,6 +273,7 @@ def createPATHS(inputName):
     if(not path.exists(p)):
       mkdir(p)
       flag = True
+
   return flag
 
 

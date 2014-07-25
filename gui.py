@@ -176,7 +176,7 @@ class Client():
     try:
       message = loads(message)
     except Exception, e:
-      message = False
+      message = None
       print "[X] Error decoding the message from the server %s." % (e)
     return message
 
@@ -190,12 +190,13 @@ class Client():
     if(message):
       message = self.decode(message)
     else:
-      message = False
+      message = None
     return message
 
   def close(self):
     print '\n[O] Closing connection with the server.\n'
-    self.socket.send('CLOSE')
+    message = self.encode('CLOSE')
+    self.socket.send(message)
     self.socket.close()
     return
 
@@ -283,7 +284,7 @@ class Capture(threading.Thread):
   def getFrame(self):
     cameraIndex = CAM_ID
 
-    c = cv.waitKey(10)
+    c = cv.waitKey(100)
     if(c == 'n'):
       cameraIndex += 1
       self.capture = cv.VideoCapture(cameraIndex)

@@ -16,12 +16,19 @@
 ########################################################################
 
 import cv2 as cv
+import numpy as np
 
 from sys import argv
 from traceback import print_exc
 
 class Test:
   def __init__(self):
+    pass
+
+  def setup(self):
+    pass
+
+  def run(self):
     pass
 
 def rotate(image, angle):
@@ -32,23 +39,23 @@ def rotate(image, angle):
 
 def resize(image, value):
   h, w = image.shape[:2]
-  result = cv.resize(image, (value*w, value*h), interpolation=cv.INTER_CUBIC)
+  result = cv.resize(image, None, fx=value, fy=value, interpolation=cv.INTER_CUBIC)
   return result
 
 def noise(image, value):
   image = np.zeros(image.shape, dtype=np.uint8)
-  noise = np.random.randn(image.shape)
-  noiseImage = image + 100.*noise
-  print 'Size: ', image_data.size
-  print 'Shape: ', image_data.shape 
-  return noiseImage
+  noise = np.random.normal(loc=1.0, scale=1.0, size=image.shape)
+  noiseImage = image + noise
+  result = cv.addWeighted(image, 1.0, noiseImage, 0.0, 0.0) 
+  return result
 
 def blur(image, kernel):
   result = cv.GaussianBlur(image, kernel, 0)
   return result
 
 def brightness(image, value):
-  pass
+  result = cv.multiply(image, np.array([value]))
+  return result
 
 TESTS = {
   'rotate': rotate,
@@ -69,10 +76,10 @@ def main():
   result = TESTS[method](imageGray, params)
 
   while(True):
-    cv.imshow("Noise", result)
+    cv.imshow("Result", result)
     c = cv.waitKey(33)
     if((c % 256) == 27): #(ESC)
-      cv.destroyWindow("Features on %s"%(filename))
+      cv.destroyWindow("Result")
       break
   return
 

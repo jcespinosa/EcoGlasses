@@ -37,20 +37,20 @@ except Exception, e:
 # TODO
 #
 # ======================================================================
-def exploreMatch(img1, img2, kpPairs, status = None, H = None):
+def exploreMatch(img1, img2, kpPairs, status=None, H=None):
   h1, w1 = img1.shape[:2]
   h2, w2 = img2.shape[:2]
-  vis = np.zeros((max(h1, h2), w1+w2), np.uint8)
+  vis = np.zeros((max(h1, h2), w1+w2), dtype=np.uint8)
   vis[:h1, :w1] = img1
   vis[:h2, w1:w1+w2] = img2
   vis = cv.cvtColor(vis, cv.COLOR_GRAY2BGR)
 
-  if H is not None:
+  if(H is not None):
     corners = np.float32([[0, 0], [w1, 0], [w1, h1], [0, h1]])
     corners = np.int32(cv.perspectiveTransform(corners.reshape(1, -1, 2), H).reshape(-1, 2) + (w1, 0))
     cv.polylines(vis, [corners], True, (255, 255, 255))
 
-  if status is None:
+  if(status is None):
     status = np.ones(len(kpPairs), np.bool_)
 
   p1 = np.int32([kpp[0].pt for kpp in kpPairs])
@@ -150,8 +150,9 @@ def run(temp, LOGOS):
 
         if(matches >= minMatches):
           print 'Matches > %d' % (matches)
-          return (True, name, image)
-  else:
-    return False
+          return (1, name, matches, image)
 
-  return False
+  else:
+    return (2, None, 0, None)
+
+  return (0, None, 0, None)
