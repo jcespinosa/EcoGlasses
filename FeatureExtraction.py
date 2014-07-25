@@ -44,7 +44,7 @@ PATHS = {
 }
 
 # Posible logos to be detected
-LOGO_NAMES = ['kellogs', 'lala', 'quaker', 'kirkland']
+LOGO_NAMES = ['kellogs', 'lala', 'quaker', 'kirkland', 'pepsi', 'nestle']
 
 # ======================================================================
 # FeatureExtractor
@@ -67,7 +67,7 @@ def FeatureExtractor(cvImage=None, filename=None):
 
   imageGray = cv.cvtColor(inputImage, cv.COLOR_BGR2GRAY)
 
-  detector = cv.ORB(nfeatures=500)
+  detector = cv.ORB(nfeatures=1000)
   keypoints, descriptors = detector.detectAndCompute(imageGray, None, useProvidedKeypoints=False)
 
   template['image'] = inputImage
@@ -264,12 +264,13 @@ def extraction(inputName, extension, show=False):
 def createPATHS(inputName):
   flag = False
 
-  for path in PATHS:
-    if(not path.exists(path)):
-      mkdir(path)
+  for p in PATHS:
+    p = PATHS[p]
+    if(not path.exists(p)):
+      mkdir(p)
       flag = True
 
-    p = path + '/' + inputName + '/'
+    p = p + inputName + '/'
     if(not path.exists(p)):
       mkdir(p)
       flag = True

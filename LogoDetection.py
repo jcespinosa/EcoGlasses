@@ -27,7 +27,6 @@ from FeatureExtraction import FeatureExtractor, loadFeatures, loadTemplates
 from MySocket import ServerSocket
 
 path.append('./lib/')
-
 #from KNN import run as runKNN
 #from TemplateMatcher import run as runTemplateMatcher
 from FlannMatcher import run as runFlannMatcher

@@ -18,23 +18,44 @@
 import cv2 as cv
 import numpy as np
 
-from sys import argv
+
+from math import ceil, sqrt
+from os import path as osPath, mkdir
+from sys import argv, path
 from traceback import print_exc
 
-class Test:
-  def __init__(self):
-    pass
+path.append('../')
+from FeatureExtraction import FeatureExtractor, loadFeatures
 
-  def setup(self):
-    pass
+path.append('../lib/')
+from BFMatcher import run as runBFMatcher
 
-  def run(self):
-    pass
 
+PATHS = {
+  'logos': './logos/',
+  'results': {
+    'rotate': './results/rotate/',
+    'resize': './results/resize/',
+    'noise': './results/noise/',
+    'blur': './results/blur/',
+    'brightness': './results/brightness/'
+  }
+}
+
+LOGOS = loadFeatures()
+
+# ======================================================================
+# TEST FUNCTIONS
+# ======================================================================
 def rotate(image, angle):
-  rows, cols = image.shape[:2]
-  mat = cv.getRotationMatrix2D((cols/2, rows/2), angle, 1)
-  result = cv.warpAffine(image , mat, (cols,rows))
+  h, w = image.shape[:2]
+  size = int(ceil(sqrt(pow(h, 2) + pow(w, 2))))
+  center = size / 2
+  offsetX, offsetY = (size - h)/2, (size - w)/2
+  result = np.zeros((size, size, 3), dtype=np.uint8)
+  mat = cv.getRotationMatrix2D((center, center), angle, 1)
+  result[offsetX:(offsetX + h), offsetY:(offsetY + w), :] = image
+  result = cv.warpAffine(result, mat, (size, size), flags=cv.INTER_LINEAR)
   return result
 
 def resize(image, value):
@@ -43,11 +64,11 @@ def resize(image, value):
   return result
 
 def noise(image, value):
-  image = np.zeros(image.shape, dtype=np.uint8)
-  noise = np.random.normal(loc=1.0, scale=1.0, size=image.shape)
-  noiseImage = image + noise
+  empty = np.zeros(image.shape, dtype=np.uint8)
+  noise = np.random.normal(loc=value, scale=1.0, size=image.shape)
+  noiseImage = empty + noise
   result = cv.addWeighted(image, 1.0, noiseImage, 0.0, 0.0) 
-  return result
+  return noiseImage
 
 def blur(image, kernel):
   result = cv.GaussianBlur(image, kernel, 0)
@@ -57,30 +78,101 @@ def brightness(image, value):
   result = cv.multiply(image, np.array([value]))
   return result
 
+
+# ======================================================================
+
+
 TESTS = {
-  'rotate': rotate,
-  'resize': resize,
-  'noise': noise,
-  'blur': blur,
-  'brightness': brightness
+  'rotate': {
+    'test': rotate,
+    'params': [angle for angle in range(10, 360, 10)]
+  },
+  'size': {
+    'test': resize,
+    'params':  [(a*0.25) for a in range(2, 9, 1)]
+  },
+  'noise': {
+    'test': noise,
+    'params': [(value*0.5) for value in range(2, 7, 1)]
+  },
+  'blur': {
+    'test': blur,
+    'params': [5, 9, 13, 17, 21, 25, 29, 33, 37, 41]
+  },
+  'brightness': {
+    'test': brightness,
+    'params': [(value*0.2) for value in range(1, 11, 1)]
+  },
 }
+
+
+class Test:
+  def __init__(self, tType, imageName):
+    self.results = {
+      'base': dict(),
+      'results': dict(),
+    }
+    self.frame = cv.imread(PATHS['logos'] + imageName + '.png')
+    self.imageName = imageName
+    self.type = tType
+    self.setup(imageName)
+
+  def createPATHS(self, inputName):
+    global PATHS
+
+    flag = False
+    PATHS = PATHS['results']
+    for p in PATHS:
+      p = PATHS[p]
+      if(not osPath.exists(p)):
+        mkdir(p)
+        flag = True
+
+      p = p + inputName + '/'
+      if(not osPath.exists(p)):
+        mkdir(p)
+        flag = True
+
+    return flag
+
+  def setup(self, imageName):
+    global TESTS
+
+    self.test = TESTS[self.type]['test']
+    self.params = TESTS[self.type]['params']
+
+    if(self.createPATHS(imageName)):
+      print '[O] Results paths created.'
+    return
+
+  def save(self):
+    return
+
+  def run(self):
+    global LOGOS
+    for param in self.params:
+      param = (param, param) if(self.type == 'blur') else param
+      frame = self.test(self.frame, param)
+      self.temp = FeatureExtractor(cvImage=frame)
+      state, logoName, matches, image = runBFMatcher(self.temp, LOGOS)
+      image = image if(state==1) else self.temp['array']
+      while(True):
+        cv.imshow("Result", image)
+        cv.moveWindow("Result", 100, 100)
+        c = cv.waitKey(33)
+        if((c % 256) == 27): #(ESC)
+          cv.destroyWindow("Result")
+          break
+    return
+
 
 def main():
   image = argv[1]
   method = argv[2]
-  params = (int(argv[3]), int(argv[3])) if(method == 'blur') else float(argv[3])
 
-  inputImage = cv.imread(image)
-  imageGray = cv.cvtColor(inputImage, cv.COLOR_BGR2GRAY)
+  test = Test(method, image)
+  test.run()
 
-  result = TESTS[method](imageGray, params)
-
-  while(True):
-    cv.imshow("Result", result)
-    c = cv.waitKey(33)
-    if((c % 256) == 27): #(ESC)
-      cv.destroyWindow("Result")
-      break
   return
 
 if(__name__ == '__main__'):

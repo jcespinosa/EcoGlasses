@@ -135,7 +135,7 @@ def run(temp, LOGOS):
         else:
           rawMatches = matcher.match(desc1, desc2)
           ratio = 0.50
-          minMatches = 5
+          minMatches = 10
 
         p1, p2, kpPairs = filterMatches(kp1, kp2, rawMatches, ratio=ratio)
 
