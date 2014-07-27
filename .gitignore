@@ -8,6 +8,9 @@
 *.swp
 *.pyc
 *~
+/arrays/
+/descriptors/
+/keypoints/
 /experiments/logos/
 /experiments/results/
 .project

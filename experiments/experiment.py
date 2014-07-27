@@ -67,7 +67,7 @@ def noise(image, value):
   empty = np.zeros(image.shape, dtype=np.uint8)
   noise = np.random.normal(loc=value, scale=1.0, size=image.shape)
   noiseImage = empty + noise
-  result = cv.addWeighted(image, 1.0, noiseImage, 0.0, 0.0) 
+  result = cv.addWeighted(image, 0.7, noiseImage, 0.3, 0)
   return noiseImage
 
 def blur(image, kernel):
