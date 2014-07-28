@@ -53,3 +53,4 @@ def run(temp, image, LOGOS):
         center = (int(x), int(y))
         cv.circle(image, center, 2, color, -1)
   return True
+  

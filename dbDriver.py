@@ -17,22 +17,24 @@
 
 from pymongo import *
 from sys import argv
+from traceback import print_exc
 
+
+# ======================================================================
+# DB connection
+# ======================================================================
 client, db, logos = None, None, None
-
-
-# ======================================================================
-# connect
-#
-# TODO
-#
-# ======================================================================
-def connect():
-  global client, db, collection
+try:
+  print '[!] Attempting to connect to the database... '
   client = MongoClient('localhost', 27017)
   db = client['ecoglasses']
   logos = db['logos']
-  return
+  print '[O] Connection established with the database.'
+except Exception, e:
+  print '[X] An error has ocurred while connecting to the database'
+  print " Exception >> %s\n" % (e) 
+  print_exc()
+
 
 # ======================================================================
 # get
@@ -53,6 +55,7 @@ def get(name):
 
   return result
 
+
 # ======================================================================
 # main
 #
@@ -64,7 +67,6 @@ def main():
   get(logo)
   return
 
-connect()
 
 if(__name__ == '__main__'):
   main()

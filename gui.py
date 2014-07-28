@@ -31,6 +31,7 @@ from MySocket import ClientSocket
 
 CAM_ID = 0
 
+
 # ======================================================================
 # App Class
 #
@@ -326,6 +327,7 @@ def cv2pil(frame):
   frame = Image.fromstring('RGB', (w,h), frame.tostring(), 'raw', 'BGR')
   return frame
 
+
 # ======================================================================
 # calculateROI
 #
@@ -339,6 +341,7 @@ def calculateROI(im):
   y = (fh - bh)/2
   return x, y, bh, bw
 
+
 # ======================================================================
 # getROI
 #
@@ -349,6 +352,7 @@ def getROI(im):
   x, y, bh, bw = calculateROI(im)
   roi = im[y:y+bh, x:x+bw]
   return roi
+
 
 # ======================================================================
 # Main

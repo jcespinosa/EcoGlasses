@@ -35,15 +35,36 @@
     "madein": "none"
   },
   {
-    "id": "kirkland",
-    "name": "Kirkland",
+    "id": "costena",
+    "name": "La costena",
     "product": "none",
     "barcode": "none",
     "madein": "none"
   },
   {
-    "id": "sony",
-    "name": "Sony",
+    "id": "cocacola",
+    "name": "Coca-Cola",
+    "product": "none",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "jumex",
+    "name": "Jumex",
+    "product": "none",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "sabritas",
+    "name": "Sabritas",
+    "product": "none",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "barcel",
+    "name": "Barcel",
     "product": "none",
     "barcode": "none",
     "madein": "none"

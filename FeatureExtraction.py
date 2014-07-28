@@ -18,33 +18,19 @@
 import cv2 as cv
 import numpy as np
 
-from cPickle import dump, load
+from cPickle import dump
 from os import mkdir, path
 from sys import argv
 
 
-# ======================================================================
-# FeatureExtraction
-#
-# Gets an external filename
-# Uses ORB Feature detection method to obtain the keypoints
-# and descriptors from the image
-# Saves the keypoints on a *.kp file
-# Saves the image and descriptors on a *.npy file
-# Show the features in a cv window
-#
-# ======================================================================
-
 # PATHS to save the corresponding data, 
 PATHS = {
-  'keypoints': './keypoints/',
-  'descriptors': './descriptors/',
   'arrays': './arrays/',
+  'descriptors': './descriptors/',
+  'keypoints': './keypoints/',
   'logos': './logos/'
 }
 
-# Posible logos to be detected
-LOGO_NAMES = ['kellogs', 'lala', 'quaker', 'kirkland', 'pepsi', 'nestle']
 
 # ======================================================================
 # FeatureExtractor
@@ -78,78 +64,6 @@ def FeatureExtractor(cvImage=None, filename=None):
 
 
 # ======================================================================
-# loadFeatures
-#
-# TODO
-#
-# ======================================================================
-def loadFeatures():
-  global LOGO_NAMES
-
-  LOGOS = dict()
-
-  for name in LOGO_NAMES:
-    LOGOS[name] = list()
-    count = 1
-    while(True):
-      path = '%s/%d'%(name, count)
-
-      keypoints = loadKeypoints(PATHS['keypoints'] + path + '.kp')
-      
-      if(not keypoints):
-        print "[!] Template for '%s' not found, the sequence is broken, end reached." % (path)
-        break
-
-      descriptors = np.load(PATHS['descriptors'] + path + '.npy')
-      array = np.load(PATHS['arrays'] + path + '.npy')
-
-      template = {
-        'keypoints': keypoints,
-        'descriptors': descriptors,
-        'array': array
-      }
-
-      print '[O] Loaded template for %s.' % (path)
-      LOGOS[name].append(template)
-      count += 1
-  return LOGOS
-
-
-# ======================================================================
-# loadTemplates
-#
-# TODO
-#
-# ======================================================================
-def loadTemplates():
-  global LOGO_NAMES
-
-  LOGOS = dict()
-
-  for name in LOGO_NAMES:
-    LOGOS[name] = list()
-    count = 1
-    while(True):
-      path = '%s/%d'%(name, count)
-
-      try:
-        template = cv.imread(PATHS['logos'] + path + '.png')
-      except Exception, e:
-        print "[X] %s" % (e)
-        break
-
-      if(template is None):
-        print "[!] Template for '%s' not found, the sequence is broken, end reached." % (path)
-        break
-
-      template = cv.cvtColor(template, cv.COLOR_BGR2GRAY)
-      print '[O] Loaded template for %s.' % (path)
-      LOGOS[name].append(template)
-      count += 1
-  return LOGOS
-
-
-# ======================================================================
 # saveKeypoints
 #
 # TODO
@@ -165,36 +79,6 @@ def saveKeypoints(filename, keypoints):
   with open(filename, 'wb') as outputFile:
     dump(kArray, outputFile)
   return
-
-
-# ======================================================================
-# loadKeypoints
-#
-# TODO
-#
-# ======================================================================
-def loadKeypoints(filename):
-  keypoints = list()
-
-  try:
-    with open(filename, 'rb') as inputFile:
-      kArray = load(inputFile)
-
-    for point in kArray:
-      keypoint = cv.KeyPoint(
-        x=point[0][0],
-        y=point[0][1],
-        _size=point[1],
-        _angle=point[2],
-        _response=point[3],
-        _octave=point[4],
-        _class_id=point[5]
-      )
-
-      keypoints.append(keypoint)      
-  except:
-    return None
-  return keypoints
 
 
 # ======================================================================
@@ -301,6 +185,7 @@ def main():
 
   extraction(inputName, extension, show=True)
   return
+
 
 if(__name__ == '__main__'):
   main()

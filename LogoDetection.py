@@ -22,18 +22,11 @@ from cPickle import dumps, loads
 from sys import argv, path
 from traceback import print_exc
 
+import Matcher
 from dbDriver import get
-from FeatureExtraction import FeatureExtractor, loadFeatures, loadTemplates
+from FeatureExtraction import FeatureExtractor
 from MySocket import ServerSocket
 
-path.append('./lib/')
-#from KNN import run as runKNN
-#from TemplateMatcher import run as runTemplateMatcher
-from FlannMatcher import run as runFlannMatcher
-from BFMatcher import run as runBFMatcher
-
-
-LOGOS = dict()
 
 # ======================================================================
 # Server
@@ -107,26 +100,18 @@ def processResult(res, frames):
 
   return result, frames
 
+
 # ======================================================================
 # loadFeatures
 #
 # TODO
 #
 # ======================================================================
-MATCHERS = {
-  'bf': runBFMatcher,
-  'flann': runFlannMatcher
-}
-#  'knn': runKNN,
-#  'svm': runSVM,
-#  'template': runTemplateMatcher
-#}
-
-def match(frames, method):
-  if(method):
-    frame = frames['temp'] if(method != 'template') else frames['gray']
+def match(frames, matcherMethod):
+  if(matcherMethod):
+    frame = frames['temp'] if(matcherMethod != 'template') else frames['gray']
     try:
-      res = MATCHERS[method](frame, LOGOS)
+      res = Matcher.runMatcher(frame)
     except Exception, e:
       print '[X] Error calling matcher method: %s' % (e)
       print_exc()
@@ -135,6 +120,7 @@ def match(frames, method):
     res = (2, None, 0, None)
   res, frames = processResult(res, frames)
   return res, frames
+
 
 # ======================================================================
 # preprocessFrame
@@ -155,6 +141,7 @@ def preprocessFrame(frame):
   #frames['blur'] = smooth(frame, mat=(15,15))
   print '[O] Frame is ready ...'
   return frames
+
 
 # ======================================================================
 # preprocessFrame
@@ -189,6 +176,7 @@ def dispatch(matcherMethod):
     
   return
 
+
 # ======================================================================
 # Main
 # ======================================================================
@@ -199,20 +187,13 @@ def main():
     matcherMethod = argv[1]
   except Exception, e:
     print '[!] One argument expected (matcherMethod [bf, flann, template, svm, knn]).'
-  print "[!] Using matcher method %s." % (matcherMethod)
+  print "[!] Using default matcher method %s." % (matcherMethod)
 
-  global LOGOS
-  if(matcherMethod == 'template'):
-    print '[>] Loading templates ...'
-    LOGOS = loadTemplates()
-  else:
-    print '[>] Loading features ...'
-    LOGOS = loadFeatures()
-  print '[O] Loaded.\n'
-
+  Matcher.configureMatcher(matcherMethod)
   dispatch(matcherMethod)
 
   return
+
 
 if(__name__ == '__main__'):
   main()

@@ -20,26 +20,14 @@ import numpy as np
 
 
 # ======================================================================
-# FLANN BASED MATCHER
+# BRUTE FORCE MATCHER
 # ======================================================================
+KNN_MATCHER = False
+MATCHER = None
 try:
-  FLANN_INDEX_KDTREE = 1
-  FLANN_INDEX_LSH = 6
-
-  flannParams = {
-    'algorithm': FLANN_INDEX_LSH,
-    'table_number': 6, # 12
-    'key_size': 12, # 20
-    'multi_probe_level': 1 #2
-  }
-  searchParams = {
-    'checks': 50
-  } 
-
-  matcher = cv.FlannBasedMatcher(flannParams, searchParams)
+  MATCHER = cv.BFMatcher(cv.NORM_HAMMING) if(KNN_MATCHER) else cv.BFMatcher(cv.NORM_HAMMING, crossCheck=True)
 except Exception, e:
   print e
-  matcher = None
 
 
 # ======================================================================
@@ -48,10 +36,10 @@ except Exception, e:
 # TODO
 #
 # ======================================================================
-def exploreMatch(img1, img2, kpPairs, status = None, H = None):
+def exploreMatch(img1, img2, kpPairs, status=None, H=None):
   h1, w1 = img1.shape[:2]
   h2, w2 = img2.shape[:2]
-  vis = np.zeros((max(h1, h2), w1+w2), np.uint8)
+  vis = np.zeros((max(h1, h2), w1+w2), dtype=np.uint8)
   vis[:h1, :w1] = img1
   vis[:h2, w1:w1+w2] = img2
   vis = cv.cvtColor(vis, cv.COLOR_GRAY2BGR)
@@ -92,14 +80,27 @@ def exploreMatch(img1, img2, kpPairs, status = None, H = None):
 # TODO
 #
 # ======================================================================
-def filterMatches(kp1, kp2, matches, ratio=0.60):
+def filterMatches(kp1, kp2, matches, ratio=0.50):
+  global KNN_MATCHER
+
   mkp1, mkp2 = list(), list()
 
-  for m in matches:
-    if(len(m) == 2 and m[0].distance < (m[1].distance * ratio)):
-      m = m[0]
-      mkp1.append(kp1[m.queryIdx])
-      mkp2.append(kp2[m.trainIdx])
+  if(not KNN_MATCHER):
+    matches = sorted(matches, key = lambda x:x.distance)
+    distances = [m.distance for m in matches]
+    threshold = (sum(distances) / len(distances)) * ratio
+
+    for m in matches:
+      if(m.distance < threshold):
+        mkp1.append(kp1[m.queryIdx])
+        mkp2.append(kp2[m.trainIdx])
+
+  else:
+    for m in matches:
+      if(len(m) == 2 and m[0].distance < (m[1].distance * ratio)):
+        m = m[0]
+        mkp1.append(kp1[m.queryIdx])
+        mkp2.append(kp2[m.trainIdx])
 
   p1 = np.float32([kp.pt for kp in mkp1])
   p2 = np.float32([kp.pt for kp in mkp2])
@@ -113,34 +114,43 @@ def filterMatches(kp1, kp2, matches, ratio=0.60):
 # TODO
 #
 # ======================================================================
-def run(temp, LOGOS):
-  global matcher
+def run(frame, LOGOS):
+  global KNN_MATCHER, MATCHER
 
   rawMatches, ratio, minMatches = None, None, None
   H, status = None, None
 
-  if(matcher):
+  if(MATCHER):
     for name, logo in LOGOS.iteritems():
       for template in logo:
-        img1, img2 = template['array'], temp['array']
-        desc1, desc2 = template['descriptors'], temp['descriptors']
-        kp1, kp2 = template['keypoints'], temp['keypoints']
+        img1, img2 = template['array'], frame['array']
+        desc1, desc2 = template['descriptors'], frame['descriptors']
+        kp1, kp2 = template['keypoints'], frame['keypoints']
 
-        rawMatches = matcher.knnMatch(desc1, trainDescriptors=desc2, k=2)
-        p1, p2, kpPairs = filterMatches(kp1, kp2, rawMatches, ratio=0.65)
+        if(KNN_MATCHER):
+          rawMatches = MATCHER.knnMatch(desc1, trainDescriptors=desc2, k=2)
+          ratio = 0.65
+          minMatches = 10
+        else:
+          rawMatches = MATCHER.match(desc1, desc2)
+          ratio = 0.50
+          minMatches = 10
+
+        p1, p2, kpPairs = filterMatches(kp1, kp2, rawMatches, ratio=ratio)
 
         if(len(p1) >= 4):
-          H, status = cv.findHomography(p1, p2, cv.RANSAC, 5.0)
-          print "[O] %d / %d  inliers/matched" % (np.sum(status), len(status))
+            H, status = cv.findHomography(p1, p2, cv.RANSAC, 5.0)
+            print "[O] %d / %d  inliers/matched" % (np.sum(status), len(status))
         else:
-          H, status = None, None
-          print "[!] %d matches found, not enough for homography estimation" % len(p1)
+            H, status = None, None
+            print "[!] %d matches found, not enough for homography estimation" % len(p1)
 
         matches, image = exploreMatch(img1, img2, kpPairs, status, H)
 
-        if(matches >= 10):
+        if(matches >= minMatches):
           print 'Matches > %d' % (matches)
           return (1, name, matches, image)
+
   else:
     return (2, None, 0, None)
 

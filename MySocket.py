@@ -91,7 +91,7 @@ class Socket():
 
   def sSend(self, m, message, sender):
     print "[>] Sending message to %s (%d bytes) ..." % (m, getsizeof(message))
-    self.toFile("to%s"%(m), message)
+    #self.toFile("to%s"%(m), message)
     message = self.split(message)
     sender.send(message)
     return
@@ -104,7 +104,7 @@ class Socket():
       data += chunk
       chunk = ''
     data = self.join(data)
-    self.toFile("from%s"%(m), data)
+    #self.toFile("from%s"%(m), data)
     print "[O] Received message from %s (%d bytes)." % (m, getsizeof(data))
     return data
 
