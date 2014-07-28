@@ -21,14 +21,13 @@ import numpy as np
 
 from math import ceil, sqrt
 from os import path as osPath, mkdir
+from random import random
 from sys import argv, path
 from traceback import print_exc
 
 path.append('../')
-from FeatureExtraction import FeatureExtractor, loadFeatures
-
-path.append('../lib/')
-from BFMatcher import run as runBFMatcher
+import Matcher
+from FeatureExtraction import FeatureExtractor
 
 
 PATHS = {
@@ -41,8 +40,6 @@ PATHS = {
     'brightness': './results/brightness/'
   }
 }
-
-LOGOS = loadFeatures()
 
 # ======================================================================
 # TEST FUNCTIONS
@@ -64,11 +61,12 @@ def resize(image, value):
   return result
 
 def noise(image, value):
-  empty = np.zeros(image.shape, dtype=np.uint8)
-  noise = np.random.normal(loc=value, scale=1.0, size=image.shape)
-  noiseImage = empty + noise
-  result = cv.addWeighted(image, 0.7, noiseImage, 0.3, 0)
-  return noiseImage
+  pepper = np.array([0, 0, 0], dtype=np.uint8)
+  result = np.copy(image)
+  for i, l in enumerate(image):
+    for j, p in enumerate(l):
+      result[i][j] = pepper if(random() > value) else image[i][j]
+  return result
 
 def blur(image, kernel):
   result = cv.GaussianBlur(image, kernel, 0)
@@ -77,10 +75,7 @@ def blur(image, kernel):
 def brightness(image, value):
   result = cv.multiply(image, np.array([value]))
   return result
-
-
 # ======================================================================
-
 
 TESTS = {
   'rotate': {
@@ -93,11 +88,11 @@ TESTS = {
   },
   'noise': {
     'test': noise,
-    'params': [(value*0.5) for value in range(2, 7, 1)]
+    'params': [(value*0.1)+0.05 for value in range(5, 10, 1)]
   },
   'blur': {
     'test': blur,
-    'params': [5, 9, 13, 17, 21, 25, 29, 33, 37, 41]
+    'params': [5, 9, 13, 17, 21]#, 25, 29, 33, 37, 41]
   },
   'brightness': {
     'test': brightness,
@@ -154,7 +149,7 @@ class Test:
       param = (param, param) if(self.type == 'blur') else param
       frame = self.test(self.frame, param)
       self.temp = FeatureExtractor(cvImage=frame)
-      state, logoName, matches, image = runBFMatcher(self.temp, LOGOS)
+      state, logoName, matches, image = Matcher.runMatcher(self.temp)
       image = image if(state==1) else self.temp['array']
       while(True):
         cv.imshow("Result", image)
@@ -169,7 +164,7 @@ class Test:
 def main():
   image = argv[1]
   method = argv[2]
-
+  Matcher.configureMatcher('bf')
   test = Test(method, image)
   test.run()
 

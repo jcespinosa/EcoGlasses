@@ -22,7 +22,7 @@ from cPickle import load
 from os import listdir
 from sys import path
 
-path.append('./matchers/')
+path.append('../matchers/')
 from BFMatcher import run as runBFMatcher
 from FlannMatcher import run as runFlannMatcher
 from KNN import run as runKNN
@@ -44,14 +44,14 @@ MATCHERS = {
 LOGOS = dict()
 
 # Posible logos to be detected
-LOGO_NAMES = [name for name in listdir('logos')]
+LOGO_NAMES = [name for name in listdir('../logos')]
 
 # PATHS to load the corresponding data, 
 PATHS = {
-  'arrays': './arrays/',
-  'descriptors': './descriptors/',
-  'keypoints': './keypoints/',
-  'logos': './logos/'
+  'arrays': '../arrays/',
+  'descriptors': '../descriptors/',
+  'keypoints': '../keypoints/',
+  'logos': '../logos/'
 }
 
 
@@ -147,7 +147,7 @@ def loadKeypoints(filename):
         _class_id=point[5]
       )
 
-      keypoints.append(keypoint)      
+      keypoints.append(keypoint)
   except:
     return None
   return keypoints
