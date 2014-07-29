@@ -18,11 +18,11 @@
 import cv2 as cv
 import numpy as np
 
-
 from math import ceil, sqrt
-from os import path as osPath, mkdir
+from os import listdir, mkdir, path as osPath
 from random import random
 from sys import argv, path
+from time import time
 from traceback import print_exc
 
 path.append('../')
@@ -30,21 +30,11 @@ import Matcher
 from FeatureExtraction import FeatureExtractor
 
 
-PATHS = {
-  'logos': './logos/',
-  'results': {
-    'rotate': './results/rotate/',
-    'resize': './results/resize/',
-    'noise': './results/noise/',
-    'blur': './results/blur/',
-    'brightness': './results/brightness/'
-  }
-}
-
 # ======================================================================
 # TEST FUNCTIONS
 # ======================================================================
 def rotate(image, angle):
+  #print "Rotation > %s" % (str(angle))
   h, w = image.shape[:2]
   size = int(ceil(sqrt(pow(h, 2) + pow(w, 2))))
   center = size / 2
@@ -56,119 +46,217 @@ def rotate(image, angle):
   return result
 
 def resize(image, value):
+  #print "Resize > %s" % (str(value))
   h, w = image.shape[:2]
   result = cv.resize(image, None, fx=value, fy=value, interpolation=cv.INTER_CUBIC)
   return result
 
 def noise(image, value):
+  #print "Noising > %s" % (str(value))
   pepper = np.array([0, 0, 0], dtype=np.uint8)
   result = np.copy(image)
   for i, l in enumerate(image):
     for j, p in enumerate(l):
-      result[i][j] = pepper if(random() > value) else image[i][j]
+      result[i][j] = pepper if(random() > value) else result[i][j]
   return result
 
-def blur(image, kernel):
+def obstruction(image, value, segments=20):
+  #print "Obstructing > %s" % (str(value))
+  result = np.copy(image)
+  h, w = image.shape[:2]
+  segmentSize = (w / segments)
+  obsSegment = segmentSize * value
+  pos = 0
+  for i in range(segments):
+    result[0:h, pos:pos+obsSegment, :] = np.array([0, 0, 0], dtype=np.uint8)
+    pos += segmentSize
+  return result
+
+def blur(image, value):
+  #print "Blurring > %s" % (str(value))
+  kernel = (value, value)
   result = cv.GaussianBlur(image, kernel, 0)
   return result
 
 def brightness(image, value):
+  #print "Brightness > %s" % (str(value))
   result = cv.multiply(image, np.array([value]))
   return result
 # ======================================================================
 
-TESTS = {
-  'rotate': {
-    'test': rotate,
-    'params': [angle for angle in range(10, 360, 10)]
-  },
+PARAMS = {
   'size': {
-    'test': resize,
-    'params':  [(a*0.25) for a in range(2, 9, 1)]
-  },
-  'noise': {
-    'test': noise,
-    'params': [(value*0.1)+0.05 for value in range(5, 10, 1)]
+    'p': [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0], #7
+    'i': 0
   },
   'blur': {
-    'test': blur,
-    'params': [5, 9, 13, 17, 21]#, 25, 29, 33, 37, 41]
+    'p': [1, 3, 5, 9, 13, 17, 21], #7
+    'i': 1
+  },
+  'noise': {
+    'p': [0.45, 0.55, 0.65, 0.75, 0.85, 0.95, 1.05], #6
+    'i': 2
+  },
+  'obstruction': {
+    'p': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5], #6
+    'i': 3
   },
   'brightness': {
-    'test': brightness,
-    'params': [(value*0.2) for value in range(1, 11, 1)]
+    'p': [0.12, 0.25, 0.50, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0], #8
+    'i': 4
   },
+  'rotate': {
+    'p': [180, 135, 90, 45, 0, 315, 270, 225, 180], #9
+    'i': 5
+  }
 }
 
+PARAMSA = {
+  'size': {
+    'p': [0.75, 1.0, 1.25], #7
+    'i': 0
+  },
+  'blur': {
+    'p': [1, 3, 5, 9], #7
+    'i': 1
+  },
+  'noise': {
+    'p': [0.85, 0.95, 1.05], #6
+    'i': 2
+  },
+  'obstruction': {
+    'p': [0.0, 0.1], #6
+    'i': 3
+  },
+  'brightness': {
+    'p': [1.0], #8
+    'i': 4
+  },
+  'rotate': {
+    'p': [0], #9
+    'i': 5
+  }
+}
+
+LOGOS = [name.split('.')[0] for name in listdir('logos')]
 
 class Test:
-  def __init__(self, tType, imageName):
-    self.results = {
-      'base': dict(),
-      'results': dict(),
-    }
-    self.frame = cv.imread(PATHS['logos'] + imageName + '.png')
-    self.imageName = imageName
-    self.type = tType
-    self.setup(imageName)
+  def __init__(self, tType=None):
+    self.tType = tType if(tType is not None) else 'all'
+    self.show = False
+    self.resultFile = './results/' + self.tType + '.csv'
+    self.setup()
 
-  def createPATHS(self, inputName):
-    global PATHS
+  def setup(self):
+    global PARAMS
+    if(self.tType == 'all'):
+      from itertools import product 
+      allParams = [
+        PARAMSA['size']['p'],
+        PARAMSA['blur']['p'],
+        PARAMSA['noise']['p'],
+        PARAMSA['obstruction']['p'],
+        PARAMSA['brightness']['p'],
+        PARAMSA['rotate']['p'],
+      ]
+      self.params = list(product(*allParams))
+      with open(self.resultFile, 'w+') as resultFile:
+        resultFile.write('size,blur,noise,obstruction,brightness,rotate,trues,falses,error,time\n')
+    else:
+      self.params = list()
+      testParams = PARAMS[self.tType]['p']
+      for param in testParams:
+        params = [0, 0, 0, 0, 0, 0]
+        params[PARAMS[self.tType]['i']] = param
+        self.params.append(tuple(params))
+      with open(self.resultFile, 'w+') as resultFile:
+        resultFile.write('value,trues,falses,error,time\n')
 
-    flag = False
-    PATHS = PATHS['results']
-    for p in PATHS:
-      p = PATHS[p]
-      if(not osPath.exists(p)):
-        mkdir(p)
-        flag = True
-
-      p = p + inputName + '/'
-      if(not osPath.exists(p)):
-        mkdir(p)
-        flag = True
-
-    return flag
-
-  def setup(self, imageName):
-    global TESTS
-
-    self.test = TESTS[self.type]['test']
-    self.params = TESTS[self.type]['params']
-
-    if(self.createPATHS(imageName)):
-      print '[O] Results paths created.'
+    print '[>] Executing %d experiments ...' % (len(self.params))
     return
 
-  def save(self):
+  def configFrame(self, frame, params):
+    frame = resize(frame, params[0]) if(params[0]) else frame
+    frame = blur(frame, params[1]) if(params[1]) else frame
+    frame = noise(frame, params[2]) if(params[2]) else frame
+    frame = obstruction(frame, params[3]) if(params[3]) else frame
+    frame = brightness(frame, params[4]) if(params[4]) else frame
+    frame = rotate(frame, params[5]) if(params[5]) else rotate(frame, 0)
+    return frame
+
+  def showImage(self, image):
+    while(True):
+      cv.imshow("Result", image)
+      cv.moveWindow("Result", 100, 100)
+      c = cv.waitKey(33)
+      if((c % 256) == 27): #(ESC)
+        cv.destroyWindow("Result")
+        break
+    return
+
+  def save(self, result, params):
+    if(self.tType == 'all'):
+      values = list(map(str, params))
+      results = values + map(str,result)
+    else:
+      value = str(max(params))
+      results = [value] + map(str,result)
+    with open(self.resultFile, 'a') as resultFile:
+      resultFile.write(','.join(results) + '\n')
+    return
+
+  def printAdvance(self, a, time):
+    advance = (float(a) * 100.0) / float(len(self.params))
+    print "Time > %s sec, Advance > %.2f" % (time, advance)
     return
 
   def run(self):
     global LOGOS
-    for param in self.params:
-      param = (param, param) if(self.type == 'blur') else param
-      frame = self.test(self.frame, param)
-      self.temp = FeatureExtractor(cvImage=frame)
-      state, logoName, matches, image = Matcher.runMatcher(self.temp)
-      image = image if(state==1) else self.temp['array']
-      while(True):
-        cv.imshow("Result", image)
-        cv.moveWindow("Result", 100, 100)
-        c = cv.waitKey(33)
-        if((c % 256) == 27): #(ESC)
-          cv.destroyWindow("Result")
-          break
+    for a, params in enumerate(self.params):
+      t, f, e = 0, 0, 0
+      startTestTime = time()
+      for logo in LOGOS:
+        frame = cv.imread('./logos/' + logo + '.png')
+        frame = self.configFrame(frame, params)
+        temp = FeatureExtractor(cvImage=frame)
+        state, matchedLogo, matches, image = Matcher.runMatcher(temp)
+        image = image if(image is not None) else temp['array']
+        if(state == 1):
+          if(matchedLogo == logo):
+            t += 1
+          else:
+            e += 1
+        else:
+          f += 1
+        if(self.show):
+          self.showImage(image)
+      endTestTime = "%.2f" % (time() - startTestTime)
+      self.printAdvance(a, endTestTime)
+      self.save([t, f, e, endTestTime], params)
+    self.printAdvance(len(self.params), endTestTime)
+
     return
 
 
 def main():
-  image = argv[1]
-  method = argv[2]
+  testType = None
+  try:
+    testType = argv[1]
+  except Exception, e:
+    print '[!] One argument expected (testType [rotate, size, noise, blur, obstruction, brightness]).'
+
   Matcher.configureMatcher('bf')
-  test = Test(method, image)
+
+  test = Test(tType=testType)
+
+  startExperimentTime = time()
   test.run()
+  print "Total time > %.2f seconds" % (time() - startExperimentTime)
+  print '[O] Experiments completed.'
 
   return
 
 if(__name__ == '__main__'):
   main()
+
+#'[O] [X] [!] [>] [?] >> << > <'

@@ -18,6 +18,8 @@
 import cv2 as cv
 import numpy as np
 
+from traceback import print_exc
+
 
 # ======================================================================
 # BRUTE FORCE MATCHER
@@ -27,7 +29,9 @@ MATCHER = None
 try:
   MATCHER = cv.BFMatcher(cv.NORM_HAMMING) if(KNN_MATCHER) else cv.BFMatcher(cv.NORM_HAMMING, crossCheck=True)
 except Exception, e:
-  print e
+  print '[X] Error creating matcher.'
+  print "Error > %s"%(str(e))
+  print_exc
 
 
 # ======================================================================
@@ -109,49 +113,67 @@ def filterMatches(kp1, kp2, matches, ratio=0.50):
 
 
 # ======================================================================
-# run
+# match
 #
 # TODO
 #
 # ======================================================================
-def run(frame, LOGOS):
+def match(frame, name, logo):
   global KNN_MATCHER, MATCHER
 
   rawMatches, ratio, minMatches = None, None, None
   H, status = None, None
 
+  for template in logo:
+    img1, img2 = template['array'], frame['array']
+    desc1, desc2 = template['descriptors'], frame['descriptors']
+    kp1, kp2 = template['keypoints'], frame['keypoints']
+
+    if(KNN_MATCHER):
+      rawMatches = MATCHER.knnMatch(desc1, trainDescriptors=desc2, k=2)
+      ratio = 0.65
+      minMatches = 20
+    else:
+      rawMatches = MATCHER.match(desc1, desc2)
+      ratio = 0.50
+      minMatches = 20
+
+    p1, p2, kpPairs = filterMatches(kp1, kp2, rawMatches, ratio=ratio)
+
+    if(len(p1) >= 4):
+        H, status = cv.findHomography(p1, p2, cv.RANSAC, 5.0)
+        #print "[O] %d / %d  inliers/matched" % (np.sum(status), len(status))
+    else:
+        H, status = None, None
+        #print "[!] %d matches found, not enough for homography estimation" % len(p1)
+
+    matches, image = exploreMatch(img1, img2, kpPairs, status, H)
+
+    if(matches >= minMatches):
+      #print 'Matches > %d' % (matches)
+      return (1, name, matches, image)
+    else:
+      return (0, name, matches, image)
+  return
+
+
+# ======================================================================
+# run
+#
+# TODO
+#
+# ======================================================================
+def run(frame, LOGOS, logo=None):
   if(MATCHER):
-    for name, logo in LOGOS.iteritems():
-      for template in logo:
-        img1, img2 = template['array'], frame['array']
-        desc1, desc2 = template['descriptors'], frame['descriptors']
-        kp1, kp2 = template['keypoints'], frame['keypoints']
-
-        if(KNN_MATCHER):
-          rawMatches = MATCHER.knnMatch(desc1, trainDescriptors=desc2, k=2)
-          ratio = 0.65
-          minMatches = 10
-        else:
-          rawMatches = MATCHER.match(desc1, desc2)
-          ratio = 0.50
-          minMatches = 10
-
-        p1, p2, kpPairs = filterMatches(kp1, kp2, rawMatches, ratio=ratio)
-
-        if(len(p1) >= 4):
-            H, status = cv.findHomography(p1, p2, cv.RANSAC, 5.0)
-            print "[O] %d / %d  inliers/matched" % (np.sum(status), len(status))
-        else:
-            H, status = None, None
-            print "[!] %d matches found, not enough for homography estimation" % len(p1)
-
-        matches, image = exploreMatch(img1, img2, kpPairs, status, H)
-
-        if(matches >= minMatches):
-          print 'Matches > %d' % (matches)
-          return (1, name, matches, image)
-
+    if(logo is not None):
+      name, logo = logo, LOGOS[logo]
+      result = match(frame, name, logo)
+      return result
+    else:
+      for name, logo in LOGOS.iteritems():
+        result = match(frame, name, logo)
+        if(result[0] == 1):
+          return result
   else:
     return (2, None, 0, None)
-
   return (0, None, 0, None)

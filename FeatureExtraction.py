@@ -23,7 +23,7 @@ from os import mkdir, path
 from sys import argv
 
 
-# PATHS to save the corresponding data, 
+# PATHS to save the data, 
 PATHS = {
   'arrays': './arrays/',
   'descriptors': './descriptors/',
@@ -38,8 +38,7 @@ PATHS = {
 # Gets an image
 # If the parameter is a filename, sets the path to the filename and reads it
 # If the parameter is a cv image, loads it in a variable.
-# Process the image and uses the SURF method to get the keypoints and 
-# descriptors
+# Process the image and uses the ORB method to get the keypoints and descriptors
 #
 # ======================================================================
 def FeatureExtractor(cvImage=None, filename=None):
@@ -172,7 +171,7 @@ def main():
     inputName = argv[1]
   except Exception, e:
     print '[X] Error, 1 argument expected (InputName), optional (extension [png, jpg]).'
-    return
+    
 
   try:
     extension = argv[2]
@@ -180,10 +179,12 @@ def main():
     print '[!] No extension specified, using default .png.'
     extension = 'png'
 
-  if(createPATHS(inputName)):
-    print '[O] Paths created.'
-
-  extraction(inputName, extension, show=True)
+  from os import listdir 
+  LOGO_NAMES = [name for name in listdir('./logos')]
+  for inputName in LOGO_NAMES:
+    if(createPATHS(inputName)):
+      print '[O] Paths created.'
+      extraction(inputName, extension, show=True)
   return
 
 

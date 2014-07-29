@@ -17,12 +17,12 @@
 
 import cv2 as cv
 import numpy as np
-import threading
 
 from cPickle import dumps, loads
 from time import sleep
 from Tkinter import *
 from traceback import print_exc
+from threading import Thread
 from PIL import Image, ImageTk
 from sys import argv
 from Queue import Queue
@@ -42,7 +42,7 @@ CAM_ID = 0
 class App(Frame):
   def __init__(self, parent, width, height):
     Frame.__init__(self, parent)
-    parent.wm_protocol ('WM_DELETE_WINDOW', self.onClose)
+    parent.wm_protocol('WM_DELETE_WINDOW', self.onClose)
     self.windowSize = {'width': width, 'height': height}
     self.parent = parent
     self.buildUI() 
@@ -154,7 +154,7 @@ class App(Frame):
     if(self.queue.qsize() > 0):
       task = self.queue.get(0)
       self.processTask(task)
-    #print self.queue.qsize()
+    print self.queue.qsize()
     self.parent.after(50, self.processQueue)
     return
 
@@ -207,9 +207,9 @@ class Client():
 #
 #
 # ======================================================================
-class Detection(threading.Thread):
+class Detection(Thread):
   def __init__(self):
-    threading.Thread.__init__(self)
+    Thread.__init__(self)
     self.frame = None
     self.state = None
     self.stop = False
@@ -272,9 +272,9 @@ class Detection(threading.Thread):
 # Convert the frames from OpenCV to PIL images
 # 
 # ======================================================================
-class Capture(threading.Thread):
+class Capture(Thread):
   def __init__(self):
-    threading.Thread.__init__(self)
+    Thread.__init__(self)
     self.capture = None
     self.frame = None
     self.cvFrame = None
@@ -358,7 +358,6 @@ def getROI(im):
 # Main
 # ======================================================================
 if(__name__ == '__main__'):
-
   debug, feedback = False, False
   if(len(argv) > 1):
     debug = True if(argv[1] == '-d') else False

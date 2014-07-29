@@ -68,5 +68,75 @@
     "product": "none",
     "barcode": "none",
     "madein": "none"
+  },
+  {
+    "id": "alpura",
+    "name": "Alpura",
+    "product": "Lacteos",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "bimbo",
+    "name": "Pan Bimbo",
+    "product": "Pan",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "colgate",
+    "name": "Colgate",
+    "product": "Higiene dental",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "crest",
+    "name": "Crest",
+    "product": "Higiene dental",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "delVale",
+    "name": "Del Valle",
+    "product": "Jugos",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "holanda",
+    "name": "Holanda",
+    "product": "Helados",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "knorr",
+    "name": "Knorr",
+    "product": "Condimentos",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "kraft",
+    "name": "Kraft",
+    "product": "Alimentos",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "marinela",
+    "name": "Marinela",
+    "product": "Pan",
+    "barcode": "none",
+    "madein": "none"
+  },
+  {
+    "id": "tiaRosa",
+    "name": "Tia Rosa",
+    "product": "Pan",
+    "barcode": "none",
+    "madein": "none"
   }
 ]

@@ -1,5 +1,4 @@
 from Crypto.PublicKey import RSA 
-from sys import argv
 
 def generate_RSA(bits=2048):
     '''
@@ -7,10 +6,10 @@ def generate_RSA(bits=2048):
     param: bits The key length in bits
     Return private key and public key
     '''
-    new_key = RSA.generate(bits, e=65537) 
-    public_key = new_key.publickey().exportKey("PEM") 
-    private_key = new_key.exportKey("PEM") 
-    return private_key, public_key
+    newKey = RSA.generate(bits, e=65537) 
+    publicKey = newKey.publickey().exportKey("PEM") 
+    privateKey = newKey.exportKey("PEM") 
+    return privateKey, publicKey
 
 def writefile(filename, string):
   with open(filename, 'wb') as output:

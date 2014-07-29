@@ -171,7 +171,7 @@ def dispatch(matcherMethod):
 
     s.close()
     cv.destroyWindow('Client Frame')
-    for i in range(10):
+    for a in range(10):
       cv.waitKey(100)
     
   return

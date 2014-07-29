@@ -58,16 +58,16 @@ class Socket():
 
   def encrypt(self, message):
     key = open(self.publicKey, 'r').read()
-    rsakey = RSA.importKey(key)
-    rsakey = PKCS1_OAEP.new(rsakey)
-    encrypted = rsakey.encrypt(message)
+    rsaKey = RSA.importKey(key)
+    rsaKey = PKCS1_OAEP.new(rsakey)
+    encrypted = rsaKey.encrypt(message)
     return encrypted
 
   def decrypt(self, message):
     key = open(self.privateKey, 'r').read() 
-    rsakey = RSA.importKey(key) 
-    rsakey = PKCS1_OAEP.new(rsakey)
-    decrypted = rsakey.decrypt(message)
+    rsaKey = RSA.importKey(key) 
+    rsaKey = PKCS1_OAEP.new(rsakey)
+    decrypted = rsaKey.decrypt(message)
     return decrypted
 
   def split(self, message, size=100):

@@ -29,7 +29,7 @@ from KNN import run as runKNN
 from TemplateMatcher import run as runTemplateMatcher
 
 
-# The matcher
+# The MATCHER
 MATCHER = None
 
 # MATCHERS calls 
@@ -40,13 +40,13 @@ MATCHERS = {
   'template': runTemplateMatcher
 }
 
-# The logos
+# The LOGOS
 LOGOS = dict()
 
-# Posible logos to be detected
+# Posible logos that could be detected
 LOGO_NAMES = [name for name in listdir('../logos')]
 
-# PATHS to load the corresponding data, 
+# PATHS to load the saved data, 
 PATHS = {
   'arrays': '../arrays/',
   'descriptors': '../descriptors/',
@@ -161,20 +161,26 @@ def loadKeypoints(filename):
 # ======================================================================
 def configureMatcher(matcherMethod):
   global MATCHER
+
   if(matcherMethod == 'template'):
     print '[>] Loading templates ...'
     loadTemplates()
   else:
     print '[>] Loading features ...'
     loadFeatures()
+
   MATCHER = MATCHERS[matcherMethod]
   print '[O] Matcher loaded.\n'
+
   return
 
 
 # ======================================================================
-# main
+# runMatcher
+#
+# TODO
+#
 # ======================================================================
-def runMatcher(frame):
-  result = MATCHER(frame, LOGOS)
+def runMatcher(frame, logo=None):
+  result = MATCHER(frame, LOGOS, logo=logo)
   return result
