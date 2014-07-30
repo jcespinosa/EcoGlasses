@@ -154,7 +154,7 @@ class App(Frame):
     if(self.queue.qsize() > 0):
       task = self.queue.get(0)
       self.processTask(task)
-    print self.queue.qsize()
+    #print self.queue.qsize()
     self.parent.after(50, self.processQueue)
     return
 

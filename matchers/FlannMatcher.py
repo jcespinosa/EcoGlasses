@@ -140,7 +140,7 @@ def match(frame, name, logo):
 
     matches, image = exploreMatch(img1, img2, kpPairs, status, H)
 
-    if(matches >= 10):
+    if(matches >= 20):
       #print 'Matches > %d' % (matches)
       return (1, name, matches, image)
     else:

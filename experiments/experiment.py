@@ -86,54 +86,54 @@ def brightness(image, value):
 
 PARAMS = {
   'size': {
-    'p': [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0], #7
+    'p': [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0], # 8
     'i': 0
   },
   'blur': {
-    'p': [1, 3, 5, 9, 13, 17, 21], #7
+    'p': [1, 3, 5, 9, 13, 17, 21], # 7
     'i': 1
   },
   'noise': {
-    'p': [0.45, 0.55, 0.65, 0.75, 0.85, 0.95, 1.05], #6
+    'p': [0.45, 0.55, 0.65, 0.75, 0.85, 0.95, 1.05], # 7
     'i': 2
   },
   'obstruction': {
-    'p': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5], #6
+    'p': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5], # 6
     'i': 3
   },
   'brightness': {
-    'p': [0.12, 0.25, 0.50, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0], #8
+    'p': [0.13, 0.25, 0.50, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0], # 9
     'i': 4
   },
   'rotate': {
-    'p': [180, 135, 90, 45, 0, 315, 270, 225, 180], #9
+    'p': [180, 135, 90, 45, 0, 315, 270, 225, 180], # 9
     'i': 5
   }
 }
 
 PARAMSA = {
   'size': {
-    'p': [0.75, 1.0, 1.25], #7
+    'p': [1.0],
     'i': 0
   },
   'blur': {
-    'p': [1, 3, 5, 9], #7
+    'p': [1],
     'i': 1
   },
   'noise': {
-    'p': [0.85, 0.95, 1.05], #6
+    'p': [1.05],
     'i': 2
   },
   'obstruction': {
-    'p': [0.0, 0.1], #6
+    'p': [0.0],
     'i': 3
   },
   'brightness': {
-    'p': [1.0], #8
+    'p': [1.0],
     'i': 4
   },
   'rotate': {
-    'p': [0], #9
+    'p': [0],
     'i': 5
   }
 }
@@ -247,12 +247,12 @@ def main():
 
   Matcher.configureMatcher('bf')
 
+  #for testType in ['size', 'blur', 'noise', 'obstruction', 'brightness', 'rotate']
   test = Test(tType=testType)
-
   startExperimentTime = time()
   test.run()
   print "Total time > %.2f seconds" % (time() - startExperimentTime)
-  print '[O] Experiments completed.'
+  print '[O] Experiments completed.\n'
 
   return
 
