@@ -135,7 +135,7 @@ def match(frame, name, logo):
       minMatches = 60
     else:
       rawMatches = MATCHER.match(desc1, desc2)
-      ratio = 0.50
+      ratio = 0.5
       minMatches = 60
 
     p1, p2, kpPairs = filterMatches(kp1, kp2, rawMatches, ratio=ratio)
