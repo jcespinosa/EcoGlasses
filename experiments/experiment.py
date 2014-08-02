@@ -113,15 +113,15 @@ PARAMS = {
 
 PARAMSA = {
   'size': {
-    'p': [1.0],
+    'p': [1.0, 1.5],
     'i': 0
   },
   'blur': {
-    'p': [1],
+    'p': [1, 5],
     'i': 1
   },
   'noise': {
-    'p': [1.05],
+    'p': [1.0],
     'i': 2
   },
   'obstruction': {
@@ -129,11 +129,11 @@ PARAMSA = {
     'i': 3
   },
   'brightness': {
-    'p': [1.0],
+    'p': [0.5, 1.0, 1.25],
     'i': 4
   },
   'rotate': {
-    'p': [0],
+    'p': [0, 90, 180, 270],
     'i': 5
   }
 }
@@ -247,13 +247,14 @@ def main():
 
   Matcher.configureMatcher('bf')
 
-  for i, testType in enumerate(['size', 'blur', 'noise', 'obstruction', 'brightness', 'rotate']):
-    print "Experiment %d > %s" % ((i+1), testType)
-    test = Test(tType=testType)
-    startExperimentTime = time()
-    test.run()
-    print "Total time > %.2f seconds" % (time() - startExperimentTime)
-    print '[O] Experiments completed.\n'
+  #for i, testType in enumerate(['size', 'blur', 'noise', 'obstruction', 'brightness', 'rotate']):
+  i = 0
+  print "Experiment %d > %s" % ((i+1), testType)
+  test = Test(tType=testType)
+  startExperimentTime = time()
+  test.run()
+  print "Total time > %.2f seconds" % (time() - startExperimentTime)
+  print '[O] Experiments completed.\n'
 
   return
 
