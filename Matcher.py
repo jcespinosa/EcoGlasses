@@ -44,7 +44,7 @@ MATCHERS = {
 LOGOS = dict()
 
 # Posible logos that could be detected
-LOGO_NAMES = [name for name in listdir('../logos')]
+LOGO_NAMES = [name for name in listdir('./logos')]
 
 # PATHS to load the saved data, 
 PATHS = {

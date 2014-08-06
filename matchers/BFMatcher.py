@@ -132,11 +132,11 @@ def match(frame, name, logo):
     if(KNN_MATCHER):
       rawMatches = MATCHER.knnMatch(desc1, trainDescriptors=desc2, k=2)
       ratio = 0.65
-      minMatches = 60
+      minMatches = 10
     else:
       rawMatches = MATCHER.match(desc1, desc2)
       ratio = 0.5
-      minMatches = 60
+      minMatches = 10
 
     p1, p2, kpPairs = filterMatches(kp1, kp2, rawMatches, ratio=ratio)
 
