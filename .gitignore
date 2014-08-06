@@ -11,9 +11,8 @@
 /arrays/
 /descriptors/
 /keypoints/
-/experiments/log.txt
-/experiments/logos/
-/experiments/results/
+/experiments/
+/gui/
 .project
 .DS_Store
 .idea

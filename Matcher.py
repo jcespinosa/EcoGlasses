@@ -22,7 +22,7 @@ from cPickle import load
 from os import listdir
 from sys import path
 
-path.append('../matchers/')
+path.append('./matchers/')
 from BFMatcher import run as runBFMatcher
 from FlannMatcher import run as runFlannMatcher
 from KNN import run as runKNN
@@ -48,10 +48,10 @@ LOGO_NAMES = [name for name in listdir('../logos')]
 
 # PATHS to load the saved data, 
 PATHS = {
-  'arrays': '../arrays/',
-  'descriptors': '../descriptors/',
-  'keypoints': '../keypoints/',
-  'logos': '../logos/'
+  'arrays': './arrays/',
+  'descriptors': './descriptors/',
+  'keypoints': './keypoints/',
+  'logos': './logos/'
 }
 
 

@@ -172,7 +172,6 @@ def main():
   except Exception, e:
     print '[X] Error, 1 argument expected (InputName), optional (extension [png, jpg]).'
     
-
   try:
     extension = argv[2]
   except Exception, e:
@@ -184,7 +183,7 @@ def main():
   for inputName in LOGO_NAMES:
     if(createPATHS(inputName)):
       print '[O] Paths created.'
-      extraction(inputName, extension, show=True)
+      extraction(inputName, extension, show=False)
   return
 
 
